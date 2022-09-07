@@ -1,0 +1,4015 @@
+-- @brief Specification of the In vehicle information Message ETSI TS 103 301
+-- Latest version available at @url https://forge.etsi.org/rep/ITS/asn1/is_ts103301.git
+
+IVIM-PDU-Descriptions {
+    itu-t (0) identified-organization (4) etsi (0) itsDomain (5) wg1 (1) ts103301 (103301) ivim (2) version2 (2)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+IMPORTS
+
+-- @brief Include ISO 19321
+-- Include references from @url https://standards.iso.org/iso/ts/19321/ed-2/en/ISO19321IVIv2.asn
+IviStructure
+FROM IVI { iso (1) standard (0) ivi (19321) version2 (2) }
+
+-- @brief Include ETSI TS 102 894-2
+-- Include references from @url https://forge.etsi.org/rep/ITS/ITS_ASN1/blob/master/CDD_TS102894-2/ITS-Container.asn
+ItsPduHeader
+FROM ITS-Container { itu-t (0) identified-organization (4) etsi (0) itsDomain (5) wg1 (1) ts (102894) cdd (2) version (2)};
+
+-- In vehicle information Message Message
+
+-- @brief In vehicle information Message Root
+-- This DF includes DEs for the IVIM protocolVersion, the IVI message type identifier _messageID_,
+-- the station identifier _stationID_ of the originating ITS-S and the IVI data from ISO TS 19321.
+IVIM ::= SEQUENCE {
+    -- @details header
+    -- The DE _protocolVersion_ is used to select the appropriate protocol decoder at the receiving ITS-S.
+    --   It shall be set to 2.
+    -- The DE _messageID_ shall be ivim(6).
+    header  ItsPduHeader,
+    -- @details ivi
+    -- The DE _ivi_ contains the IVI data as defined in ISO TS 19321.
+    ivi     IviStructure
+}
+
+END
+
+ITS-Container {
+itu-t (0) identified-organization (4) etsi (0) itsDomain (5) wg1 (1) ts (102894) cdd (2) version (2) 
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+ItsPduHeader ::= SEQUENCE {
+    protocolVersion INTEGER (0..255),
+    messageID INTEGER{ denm(1), cam(2), poi(3), spatem(4), mapem(5), ivim(6), ev-rsr(7), tistpgtransaction(8), srem(9), ssem(10), evcsn(11), saem(12), rtcmem(13) } (0..255),  -- Mantis #7209, #7005
+    stationID StationID
+}
+
+StationID ::= INTEGER(0..4294967295)
+
+ReferencePosition ::= SEQUENCE {
+    latitude Latitude,
+    longitude Longitude,
+    positionConfidenceEllipse PosConfidenceEllipse ,
+    altitude Altitude
+}
+
+DeltaReferencePosition ::= SEQUENCE {
+    deltaLatitude DeltaLatitude,
+    deltaLongitude DeltaLongitude,
+    deltaAltitude DeltaAltitude
+}
+
+Longitude ::= INTEGER {oneMicrodegreeEast (10), oneMicrodegreeWest (-10), unavailable(1800000001)} (-1800000000..1800000001)
+
+Latitude ::= INTEGER {oneMicrodegreeNorth (10), oneMicrodegreeSouth (-10), unavailable(900000001)} (-900000000..900000001)
+
+Altitude ::= SEQUENCE {
+    altitudeValue AltitudeValue,
+    altitudeConfidence AltitudeConfidence
+}
+
+AltitudeValue ::= INTEGER {referenceEllipsoidSurface(0), oneCentimeter(1), unavailable(800001)} (-100000..800001)
+
+AltitudeConfidence ::= ENUMERATED {
+    alt-000-01 (0),
+    alt-000-02 (1),
+    alt-000-05 (2),
+    alt-000-10 (3),
+    alt-000-20 (4),
+    alt-000-50 (5),
+    alt-001-00 (6),
+    alt-002-00 (7),
+    alt-005-00 (8),
+    alt-010-00 (9),
+    alt-020-00 (10),
+    alt-050-00 (11),
+    alt-100-00 (12),
+    alt-200-00 (13),
+    outOfRange (14),
+    unavailable (15)
+}
+
+DeltaLongitude ::= INTEGER {oneMicrodegreeEast (10), oneMicrodegreeWest (-10), unavailable(131072)} (-131071..131072)
+
+DeltaLatitude ::= INTEGER {oneMicrodegreeNorth (10), oneMicrodegreeSouth (-10) , unavailable(131072)} (-131071..131072)
+
+DeltaAltitude ::= INTEGER {oneCentimeterUp (1), oneCentimeterDown (-1), unavailable(12800)} (-12700..12800)
+
+PosConfidenceEllipse ::= SEQUENCE {
+    semiMajorConfidence SemiAxisLength,
+    semiMinorConfidence SemiAxisLength,
+    semiMajorOrientation HeadingValue
+}
+
+PathPoint ::= SEQUENCE {
+    pathPosition DeltaReferencePosition,
+    pathDeltaTime PathDeltaTime OPTIONAL
+}
+
+PathDeltaTime ::= INTEGER {tenMilliSecondsInPast(1)} (1..65535, ...)
+
+PtActivation ::= SEQUENCE {
+    ptActivationType PtActivationType,
+    ptActivationData PtActivationData
+}
+
+PtActivationType ::= INTEGER {undefinedCodingType(0), r09-16CodingType(1), vdv-50149CodingType(2)} (0..255)
+
+PtActivationData ::= OCTET STRING (SIZE(1..20))
+
+AccelerationControl ::= BIT STRING {
+    brakePedalEngaged (0),
+    gasPedalEngaged (1),
+    emergencyBrakeEngaged (2),
+    collisionWarningEngaged (3),
+    accEngaged (4),
+    cruiseControlEngaged (5),
+    speedLimiterEngaged (6)
+} (SIZE(7))
+
+
+SemiAxisLength ::= INTEGER{oneCentimeter(1), outOfRange(4094), unavailable(4095)} (0..4095)
+
+CauseCode ::= SEQUENCE {
+    causeCode CauseCodeType,
+    subCauseCode SubCauseCodeType,
+        ...
+}
+
+CauseCodeType ::= INTEGER {
+    reserved (0),
+    trafficCondition (1),
+    accident (2),
+    roadworks (3),
+        impassability (5),
+    adverseWeatherCondition-Adhesion (6),
+        aquaplannning (7),
+    hazardousLocation-SurfaceCondition (9),
+    hazardousLocation-ObstacleOnTheRoad (10),
+    hazardousLocation-AnimalOnTheRoad (11),
+    humanPresenceOnTheRoad (12),
+    wrongWayDriving (14),
+    rescueAndRecoveryWorkInProgress (15),
+    adverseWeatherCondition-ExtremeWeatherCondition (17),
+    adverseWeatherCondition-Visibility (18),
+    adverseWeatherCondition-Precipitation (19),
+    slowVehicle (26),
+    dangerousEndOfQueue (27),
+    vehicleBreakdown (91),
+    postCrash (92),
+    humanProblem (93),
+    stationaryVehicle (94),
+    emergencyVehicleApproaching (95),
+    hazardousLocation-DangerousCurve (96),
+    collisionRisk (97),
+    signalViolation (98),
+    dangerousSituation (99)
+} (0..255)
+
+SubCauseCodeType ::= INTEGER (0..255)
+
+TrafficConditionSubCauseCode ::= INTEGER {unavailable(0), increasedVolumeOfTraffic(1), trafficJamSlowlyIncreasing(2), trafficJamIncreasing(3), trafficJamStronglyIncreasing(4), trafficStationary(5), trafficJamSlightlyDecreasing(6), trafficJamDecreasing(7), trafficJamStronglyDecreasing(8)} (0..255)
+
+AccidentSubCauseCode ::= INTEGER {unavailable(0), multiVehicleAccident(1), heavyAccident(2), accidentInvolvingLorry(3), accidentInvolvingBus(4), accidentInvolvingHazardousMaterials(5), accidentOnOppositeLane(6), unsecuredAccident(7), assistanceRequested(8)} (0..255)
+
+RoadworksSubCauseCode ::= INTEGER {unavailable(0), majorRoadworks(1), roadMarkingWork(2), slowMovingRoadMaintenance(3), shortTermStationaryRoadworks(4), streetCleaning(5), winterService(6)} (0..255)
+
+HumanPresenceOnTheRoadSubCauseCode ::= INTEGER {unavailable(0), childrenOnRoadway(1), cyclistOnRoadway(2), motorcyclistOnRoadway(3)} (0..255)
+
+WrongWayDrivingSubCauseCode ::= INTEGER {unavailable(0), wrongLane(1), wrongDirection(2)} (0..255)
+
+AdverseWeatherCondition-ExtremeWeatherConditionSubCauseCode ::= INTEGER {unavailable(0), strongWinds(1), damagingHail(2), hurricane(3), thunderstorm(4), tornado(5), blizzard(6)} (0..255)
+
+AdverseWeatherCondition-AdhesionSubCauseCode ::= INTEGER {unavailable(0), heavyFrostOnRoad(1), fuelOnRoad(2), mudOnRoad(3), snowOnRoad(4), iceOnRoad(5), blackIceOnRoad(6), oilOnRoad(7), looseChippings(8), instantBlackIce(9), roadsSalted(10)} (0..255)
+
+AdverseWeatherCondition-VisibilitySubCauseCode ::= INTEGER {unavailable(0), fog(1), smoke(2), heavySnowfall(3), heavyRain(4), heavyHail(5), lowSunGlare(6), sandstorms(7), swarmsOfInsects(8)} (0..255)
+
+AdverseWeatherCondition-PrecipitationSubCauseCode ::= INTEGER {unavailable(0), heavyRain(1), heavySnowfall(2), softHail(3)} (0..255)
+
+SlowVehicleSubCauseCode ::= INTEGER {unavailable(0), maintenanceVehicle(1), vehiclesSlowingToLookAtAccident(2), abnormalLoad(3), abnormalWideLoad(4), convoy(5), snowplough(6), deicing(7), saltingVehicles(8)} (0..255)
+ 
+StationaryVehicleSubCauseCode ::= INTEGER {unavailable(0), humanProblem(1), vehicleBreakdown(2), postCrash(3), publicTransportStop(4), carryingDangerousGoods(5)} (0..255)
+
+HumanProblemSubCauseCode ::= INTEGER {unavailable(0), glycemiaProblem(1), heartProblem(2)} (0..255)
+
+EmergencyVehicleApproachingSubCauseCode ::= INTEGER {unavailable(0), emergencyVehicleApproaching(1), prioritizedVehicleApproaching(2)} (0..255)
+
+HazardousLocation-DangerousCurveSubCauseCode ::= INTEGER {unavailable(0), dangerousLeftTurnCurve(1), dangerousRightTurnCurve(2), multipleCurvesStartingWithUnknownTurningDirection(3), multipleCurvesStartingWithLeftTurn(4), multipleCurvesStartingWithRightTurn(5)} (0..255)
+
+HazardousLocation-SurfaceConditionSubCauseCode ::= INTEGER {unavailable(0), rockfalls(1), earthquakeDamage(2), sewerCollapse(3), subsidence(4), snowDrifts(5), stormDamage(6), burstPipe(7), volcanoEruption(8), fallingIce(9)} (0..255)
+
+HazardousLocation-ObstacleOnTheRoadSubCauseCode ::= INTEGER {unavailable(0), shedLoad(1), partsOfVehicles(2), partsOfTyres(3), bigObjects(4), fallenTrees(5), hubCaps(6), waitingVehicles(7)} (0..255)
+
+HazardousLocation-AnimalOnTheRoadSubCauseCode ::= INTEGER {unavailable(0), wildAnimals(1), herdOfAnimals(2), smallAnimals(3), largeAnimals(4)} (0..255)
+
+CollisionRiskSubCauseCode ::= INTEGER {unavailable(0), longitudinalCollisionRisk(1), crossingCollisionRisk(2), lateralCollisionRisk(3), vulnerableRoadUser(4)} (0..255)
+ 
+SignalViolationSubCauseCode ::= INTEGER {unavailable(0), stopSignViolation(1), trafficLightViolation(2), turningRegulationViolation(3)} (0..255)
+
+RescueAndRecoveryWorkInProgressSubCauseCode ::= INTEGER {unavailable(0), emergencyVehicles(1), rescueHelicopterLanding(2), policeActivityOngoing(3), medicalEmergencyOngoing(4), childAbductionInProgress(5)} (0..255)
+
+DangerousEndOfQueueSubCauseCode ::= INTEGER {unavailable(0), suddenEndOfQueue(1), queueOverHill(2), queueAroundBend(3), queueInTunnel(4)} (0..255)
+
+DangerousSituationSubCauseCode ::= INTEGER {unavailable(0), emergencyElectronicBrakeEngaged(1), preCrashSystemEngaged(2), espEngaged(3), absEngaged(4), aebEngaged(5), brakeWarningEngaged(6), collisionRiskWarningEngaged(7)} (0..255)
+
+VehicleBreakdownSubCauseCode ::= INTEGER {unavailable(0), lackOfFuel (1), lackOfBatteryPower (2), engineProblem(3), transmissionProblem(4), engineCoolingProblem(5), brakingSystemProblem(6), steeringProblem(7), tyrePuncture(8), tyrePressureProblem(9)} (0..255)
+
+PostCrashSubCauseCode ::= INTEGER {unavailable(0), accidentWithoutECallTriggered (1), accidentWithECallManuallyTriggered (2), accidentWithECallAutomaticallyTriggered (3), accidentWithECallTriggeredWithoutAccessToCellularNetwork(4)} (0..255)
+
+Curvature ::= SEQUENCE {
+ curvatureValue CurvatureValue,
+ curvatureConfidence CurvatureConfidence
+}
+
+CurvatureValue ::= INTEGER {straight(0), unavailable(1023)} (-1023..1023)
+
+CurvatureConfidence ::= ENUMERATED {
+    onePerMeter-0-00002 (0),
+    onePerMeter-0-0001 (1),
+    onePerMeter-0-0005 (2),
+    onePerMeter-0-002 (3),
+    onePerMeter-0-01 (4),
+    onePerMeter-0-1 (5),
+    outOfRange (6),
+    unavailable (7)
+}
+
+CurvatureCalculationMode ::= ENUMERATED {yawRateUsed(0), yawRateNotUsed(1), unavailable(2), ...}
+
+Heading ::= SEQUENCE {
+    headingValue HeadingValue,
+    headingConfidence HeadingConfidence
+}
+
+HeadingValue ::= INTEGER {wgs84North(0), wgs84East(900), wgs84South(1800), wgs84West(2700), unavailable(3601)} (0..3601)
+
+HeadingConfidence ::= INTEGER {equalOrWithinZeroPointOneDegree (1), equalOrWithinOneDegree (10), outOfRange(126), unavailable(127)} (1..127)
+
+LanePosition ::= INTEGER {offTheRoad(-1), innerHardShoulder(0),
+innermostDrivingLane(1), secondLaneFromInside(2), outerHardShoulder(14) } (-1..14)
+
+ClosedLanes ::= SEQUENCE {
+    innerhardShoulderStatus HardShoulderStatus OPTIONAL,
+        outerhardShoulderStatus HardShoulderStatus OPTIONAL,
+    drivingLaneStatus DrivingLaneStatus OPTIONAL,
+    ...
+}
+
+HardShoulderStatus ::= ENUMERATED {availableForStopping(0), closed(1), availableForDriving(2)}
+
+DrivingLaneStatus ::= BIT STRING (SIZE (1..13))
+
+
+PerformanceClass ::= INTEGER {unavailable(0), performanceClassA(1), performanceClassB(2)} (0..7)
+
+SpeedValue ::= INTEGER {standstill(0), oneCentimeterPerSec(1), unavailable(16383)} (0..16383)
+
+SpeedConfidence ::= INTEGER {equalOrWithinOneCentimeterPerSec(1), equalOrWithinOneMeterPerSec(100), outOfRange(126), unavailable(127)} (1..127)
+
+VehicleMass ::= INTEGER {hundredKg(1), unavailable(1024)} (1..1024) 
+
+Speed ::= SEQUENCE {
+    speedValue SpeedValue,
+    speedConfidence SpeedConfidence
+}
+
+DriveDirection ::= ENUMERATED {forward (0), backward (1), unavailable (2)}
+
+EmbarkationStatus ::= BOOLEAN
+
+LongitudinalAcceleration ::= SEQUENCE {
+    longitudinalAccelerationValue LongitudinalAccelerationValue,
+    longitudinalAccelerationConfidence AccelerationConfidence
+}
+
+LongitudinalAccelerationValue ::= INTEGER {pointOneMeterPerSecSquaredForward(1), pointOneMeterPerSecSquaredBackward(-1), unavailable(161)} (-160 .. 161)
+
+AccelerationConfidence ::= INTEGER {pointOneMeterPerSecSquared(1), outOfRange(101), unavailable(102)} (0 .. 102)
+
+LateralAcceleration ::= SEQUENCE {
+    lateralAccelerationValue LateralAccelerationValue,
+    lateralAccelerationConfidence AccelerationConfidence
+}
+
+LateralAccelerationValue ::= INTEGER {pointOneMeterPerSecSquaredToRight(-1), pointOneMeterPerSecSquaredToLeft(1), unavailable(161)} (-160 .. 161)
+
+VerticalAcceleration ::= SEQUENCE {
+    verticalAccelerationValue VerticalAccelerationValue,
+    verticalAccelerationConfidence AccelerationConfidence
+}
+
+VerticalAccelerationValue ::= INTEGER {pointOneMeterPerSecSquaredUp(1), pointOneMeterPerSecSquaredDown(-1), unavailable(161)} (-160 .. 161)
+
+StationType ::= INTEGER {unknown(0), pedestrian(1), cyclist(2), moped(3), motorcycle(4), passengerCar(5), bus(6), 
+lightTruck(7), heavyTruck(8), trailer(9), specialVehicles(10), tram(11), roadSideUnit(15)} (0..255)
+
+ExteriorLights ::= BIT STRING {
+    lowBeamHeadlightsOn      (0),
+    highBeamHeadlightsOn     (1),
+    leftTurnSignalOn         (2),
+    rightTurnSignalOn        (3),
+    daytimeRunningLightsOn   (4),
+    reverseLightOn           (5),
+    fogLightOn               (6),
+    parkingLightsOn          (7)
+} (SIZE(8))
+
+DangerousGoodsBasic::= ENUMERATED {
+    explosives1(0),
+    explosives2(1),
+    explosives3(2),
+    explosives4(3),
+    explosives5(4),
+    explosives6(5),
+    flammableGases(6),
+    nonFlammableGases(7),
+    toxicGases(8),
+    flammableLiquids(9),
+    flammableSolids(10),
+    substancesLiableToSpontaneousCombustion(11),
+    substancesEmittingFlammableGasesUponContactWithWater(12),
+    oxidizingSubstances(13),
+    organicPeroxides(14),
+    toxicSubstances(15),
+    infectiousSubstances(16),
+    radioactiveMaterial(17),
+    corrosiveSubstances(18),
+    miscellaneousDangerousSubstances(19)
+}
+
+DangerousGoodsExtended ::= SEQUENCE {
+    dangerousGoodsType DangerousGoodsBasic,
+    unNumber INTEGER (0..9999),
+    elevatedTemperature BOOLEAN,
+    tunnelsRestricted BOOLEAN,
+    limitedQuantity BOOLEAN,
+    emergencyActionCode IA5String (SIZE (1..24)) OPTIONAL,
+    phoneNumber PhoneNumber OPTIONAL,
+    companyName UTF8String (SIZE (1..24)) OPTIONAL,
+        ...
+}
+
+SpecialTransportType ::= BIT STRING {heavyLoad(0), excessWidth(1), excessLength(2), excessHeight(3)} (SIZE(4))
+
+LightBarSirenInUse ::= BIT STRING {
+    lightBarActivated (0),
+    sirenActivated (1)
+} (SIZE(2))
+
+HeightLonCarr ::= INTEGER {oneCentimeter(1), unavailable(100)} (1..100)
+
+PosLonCarr ::= INTEGER {oneCentimeter(1), unavailable(127)} (1..127)
+
+PosPillar ::= INTEGER {tenCentimeters(1), unavailable(30)} (1..30)
+
+PosCentMass ::= INTEGER {tenCentimeters(1), unavailable(63)} (1..63)
+
+RequestResponseIndication ::= ENUMERATED {request(0), response(1)}
+
+SpeedLimit ::= INTEGER {oneKmPerHour(1)} (1..255)
+
+StationarySince ::= ENUMERATED {lessThan1Minute(0), lessThan2Minutes(1), lessThan15Minutes(2), equalOrGreater15Minutes(3)}
+
+Temperature ::= INTEGER {equalOrSmallerThanMinus60Deg (-60), oneDegreeCelsius(1), equalOrGreaterThan67Deg(67)} (-60..67)
+
+TrafficRule ::= ENUMERATED {noPassing(0), noPassingForTrucks(1), passToRight(2), passToLeft(3), ...
+}
+
+WheelBaseVehicle ::= INTEGER {tenCentimeters(1), unavailable(127)} (1..127)
+
+TurningRadius ::= INTEGER {point4Meters(1), unavailable(255)} (1..255)
+
+PosFrontAx ::= INTEGER {tenCentimeters(1), unavailable(20)} (1..20)
+
+PositionOfOccupants ::= BIT STRING {
+    row1LeftOccupied (0),
+    row1RightOccupied (1),
+    row1MidOccupied (2),
+    row1NotDetectable (3),
+    row1NotPresent (4),
+    row2LeftOccupied (5),
+    row2RightOccupied (6),
+    row2MidOccupied (7),
+    row2NotDetectable (8),
+    row2NotPresent (9),
+    row3LeftOccupied (10),
+    row3RightOccupied (11),
+    row3MidOccupied (12),
+    row3NotDetectable (13),
+    row3NotPresent (14),
+    row4LeftOccupied (15),
+    row4RightOccupied (16),
+    row4MidOccupied (17),
+    row4NotDetectable (18),
+    row4NotPresent (19)} (SIZE(20))
+
+PositioningSolutionType ::= ENUMERATED {noPositioningSolution(0), sGNSS(1), dGNSS(2), sGNSSplusDR(3), dGNSSplusDR(4), dR(5), ...}
+
+VehicleIdentification ::= SEQUENCE {
+    wMInumber WMInumber OPTIONAL,
+    vDS VDS OPTIONAL,
+    ...
+}
+
+WMInumber ::= IA5String (SIZE(1..3))
+
+VDS ::= IA5String (SIZE(6))
+
+EnergyStorageType ::= BIT STRING {hydrogenStorage(0), electricEnergyStorage(1), liquidPropaneGas(2), compressedNaturalGas(3), diesel(4), gasoline(5), ammonia(6)} (SIZE(7))
+
+VehicleLength ::= SEQUENCE {
+    vehicleLengthValue VehicleLengthValue,
+    vehicleLengthConfidenceIndication VehicleLengthConfidenceIndication
+}
+
+VehicleLengthValue ::= INTEGER {tenCentimeters(1), outOfRange(1022), unavailable(1023)}  (1..1023)
+
+VehicleLengthConfidenceIndication ::= ENUMERATED {noTrailerPresent(0), trailerPresentWithKnownLength(1), trailerPresentWithUnknownLength(2), trailerPresenceIsUnknown(3), unavailable(4)}
+
+VehicleWidth ::= INTEGER {tenCentimeters(1), outOfRange(61), unavailable(62)} (1..62)
+
+PathHistory::= SEQUENCE (SIZE(0..40)) OF PathPoint
+
+EmergencyPriority ::= BIT STRING {requestForRightOfWay(0), requestForFreeCrossingAtATrafficLight(1)} (SIZE(2))
+
+InformationQuality ::= INTEGER {unavailable(0), lowest(1), highest(7)} (0..7)
+
+RoadType ::= ENUMERATED {
+    urban-NoStructuralSeparationToOppositeLanes(0),
+    urban-WithStructuralSeparationToOppositeLanes(1),
+    nonUrban-NoStructuralSeparationToOppositeLanes(2),
+    nonUrban-WithStructuralSeparationToOppositeLanes(3)}
+
+SteeringWheelAngle ::= SEQUENCE {
+    steeringWheelAngleValue SteeringWheelAngleValue,
+    steeringWheelAngleConfidence SteeringWheelAngleConfidence
+}
+
+SteeringWheelAngleValue ::= INTEGER {straight(0), onePointFiveDegreesToRight(-1), onePointFiveDegreesToLeft(1), unavailable(512)} (-511..512)
+
+SteeringWheelAngleConfidence ::= INTEGER {equalOrWithinOnePointFiveDegree (1), outOfRange(126), unavailable(127)} (1..127)
+
+TimestampIts ::= INTEGER {utcStartOf2004(0), oneMillisecAfterUTCStartOf2004(1)} (0..4398046511103)
+
+VehicleRole ::= ENUMERATED {default(0), publicTransport(1), specialTransport(2), dangerousGoods(3), roadWork(4), rescue(5), emergency(6), safetyCar(7), agriculture(8), commercial(9), military(10), roadOperator(11), taxi(12), reserved1(13), reserved2(14), reserved3(15)}
+
+YawRate::= SEQUENCE {
+    yawRateValue YawRateValue,
+    yawRateConfidence YawRateConfidence
+}
+
+YawRateValue ::= INTEGER {straight(0), degSec-000-01ToRight(-1), degSec-000-01ToLeft(1), unavailable(32767)} (-32766..32767)
+
+YawRateConfidence ::= ENUMERATED {
+    degSec-000-01 (0),
+    degSec-000-05 (1),
+    degSec-000-10 (2),
+    degSec-001-00 (3),
+    degSec-005-00 (4),
+    degSec-010-00 (5),
+    degSec-100-00 (6),
+    outOfRange (7),
+    unavailable (8)
+}
+
+ProtectedZoneType::= ENUMERATED { permanentCenDsrcTolling (0), ..., temporaryCenDsrcTolling (1) }
+
+RelevanceDistance ::= ENUMERATED {lessThan50m(0), lessThan100m(1), lessThan200m(2), lessThan500m(3), lessThan1000m(4), lessThan5km(5), lessThan10km(6), over10km(7)}
+
+RelevanceTrafficDirection ::= ENUMERATED {allTrafficDirections(0), upstreamTraffic(1), downstreamTraffic(2), oppositeTraffic(3)}
+
+TransmissionInterval ::= INTEGER {oneMilliSecond(1), tenSeconds(10000)} (1..10000)
+
+ValidityDuration ::=    INTEGER {timeOfDetection(0), oneSecondAfterDetection(1)} (0..86400)
+
+ActionID ::= SEQUENCE {
+    originatingStationID StationID,
+    sequenceNumber SequenceNumber
+}
+
+ItineraryPath ::= SEQUENCE SIZE(1..40) OF ReferencePosition
+
+ProtectedCommunicationZone ::= SEQUENCE {
+    protectedZoneType       ProtectedZoneType,
+    expiryTime TimestampIts OPTIONAL,
+    protectedZoneLatitude   Latitude,
+    protectedZoneLongitude  Longitude,
+    protectedZoneRadius ProtectedZoneRadius OPTIONAL,
+    protectedZoneID ProtectedZoneID OPTIONAL,
+        ...
+}
+
+Traces ::= SEQUENCE SIZE(1..7) OF PathHistory
+
+NumberOfOccupants ::= INTEGER {oneOccupant (1), unavailable(127)} (0 .. 127)
+
+SequenceNumber ::=  INTEGER (0..65535)
+
+PositionOfPillars ::= SEQUENCE (SIZE(1..3, ...)) OF PosPillar
+
+RestrictedTypes ::= SEQUENCE (SIZE(1..3, ...)) OF StationType
+
+EventHistory::= SEQUENCE (SIZE(1..23)) OF EventPoint
+
+EventPoint ::= SEQUENCE {
+    eventPosition DeltaReferencePosition,
+    eventDeltaTime PathDeltaTime OPTIONAL,
+    informationQuality InformationQuality
+}
+
+ProtectedCommunicationZonesRSU ::= SEQUENCE (SIZE(1..16)) OF ProtectedCommunicationZone 
+
+
+
+CenDsrcTollingZone ::= SEQUENCE {
+    protectedZoneLatitude Latitude,
+    protectedZoneLongitude Longitude,
+    cenDsrcTollingZoneID CenDsrcTollingZoneID OPTIONAL,
+        ...
+}
+
+ProtectedZoneRadius ::= INTEGER {oneMeter(1)} (1..255,...)
+
+ProtectedZoneID ::= INTEGER (0.. 134217727)
+
+CenDsrcTollingZoneID ::= ProtectedZoneID
+
+DigitalMap ::= SEQUENCE (SIZE(1..256)) OF ReferencePosition 
+
+OpeningDaysHours ::= UTF8String 
+
+PhoneNumber ::= NumericString (SIZE(1..16))
+
+END
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- ISO TS 24534-3:2015
+--
+-- This ASN.1 was generateds: 30.08.2016
+--
+-- This document contains only the data element needed for the encoding of an IVI message
+-- as defined in ISO TS 19321(2020)
+--
+-- Published version location:
+-- https://standards.iso.org/iso/24534/-3/ISO%2024534-3%20ASN.1%20repository/
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- ISO 24534-3:2015
+-- Version 29.4.2015
+
+
+ElectronicRegistrationIdentificationVehicleDataModule {iso(1) standard(0) iso24534 (24534) vehicleData (1) version1 (1)}
+
+
+DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+-- Electronic Registration Identification (ERI)- Vehicle Data
+
+EuVehicleCategoryCode ::= CHOICE {
+  euVehicleCategoryL	EuVehicleCategoryL,   -- conforms to EU 2002/24 and UNECE 1999
+  euVehicleCategoryM	EuVehicleCategoryM,   -- conforms to EU 2001/116 and UNECE 1999
+  euVehicleCategoryN	EuVehicleCategoryN,   -- conforms to EU 2001/116 and UNECE 1999
+  euVehicleCategoryO	EuVehicleCategoryO,   -- conforms to EU 2001/116 and UNECE 1999
+  euVehilcleCategoryT	NULL,    -- conforms to UNECE 1999
+  euVehilcleCategoryG	NULL     -- conforms to EU 2001/116 and UNECE 1999
+}
+
+EuVehicleCategoryL ::= ENUMERATED { l1, l2, l3, l4, l5, l6, l7 }
+
+EuVehicleCategoryM ::= ENUMERATED {m1, m2, m3}
+
+EuVehicleCategoryN ::= ENUMERATED {n1, n2, n3}
+
+EuVehicleCategoryO ::= ENUMERATED {o1, o2, o3, o4}
+
+Iso3833VehicleType ::= INTEGER {
+  passengerCar	(0),	-- term No 3.1.1
+  saloon	(1),	-- term No 3.1.1.1 (sedan)
+  convertibleSaloon	(2),	-- term No 3.1.1.2
+  pullmanSaloon	(3),	-- term No 3.1.1.3
+  stationWagon	(4),	-- term No 3.1.1.4
+  truckStationWagon	(5),	-- term No 3.1.1.4.1
+  coupe	(6),	-- term No 3.1.1.5 (coup�)
+  convertible	(7),	-- term No 3.1.1.6 (open tourer, roadstar, spider)
+  multipurposePassengerCar	(8),	-- term No 3.1.1.7
+  forwardControlPassengerCar	(9),	-- term No 3.1.1.8
+  specialPassengerCar	(10),	-- term No 3.1.1.9
+  bus	(11),	-- term No 3.1.2
+  minibus	(12),	-- term No 3.1.2.1
+  urbanBus	(13),	-- term No 3.1.2.2
+  interurbanCoach	(14),	-- term No 3.1.2.3
+  longDistanceCoach	(15),	-- term No 3.1.2.4
+  articulatedBus	(16),	-- term No 3.1.2.5
+  trolleyBus	(17),	-- term No 3.1.2.6
+  specialBus	(18),	-- term No 3.1.2.7
+  commercialVehicle	(19),	-- term No 3.1.3
+  specialCommercialVehicle	(20),	-- term No 3.1.3.1
+  specialVehicle	(21),	-- term No 3.1.4
+  trailingTowingVehicle	(22),	-- term No 3.1.5 (draw-bar tractor)
+  semiTrailerTowingVehicle	(23),	-- term No 3.1.6 (fifth wheel tractor)
+  trailer	(24),	-- term No 3.2.1
+  busTrailer	(25),	-- term No 3.2.1.1
+  generalPurposeTrailer	(26),	-- term No 3.2.1.2
+  caravan	(27),	-- term No 3.2.1.3
+  specialTrailer	(28),	-- term No 3.2.1.4
+  semiTrailer	(29),	-- term No 3.2.2
+  busSemiTrailer	(30),	-- term No 3.2.2.1
+  generalPurposeSemiTrailer	(31),	-- term No 3.2.2.2
+  specialSemiTrailer	(32),	-- term No 3.2.2.3
+  roadTrain	(33),	-- term No 3.3.1
+  passengerRoadTrain	(34),	-- term No 3.3.2
+  articulatedRoadTrain	(35),	-- term No 3.3.3
+  doubleRoadTrain	(36),	-- term No 3.3.4
+  compositeRoadTrain	(37),	-- term No 3.3.5
+  specialRoadTrain	(38),	-- term No 3.3.6
+  moped	(39),	-- term No 3.4
+  motorCycle	(40)	-- term No 3.5
+  } (0..255)
+
+END
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- ISO TS 14823
+--
+-- This ASN.1 was generated: 30.08.2016
+--
+-- This document contains only the data element needed for the encoding of an IVI message
+-- as defined in ISO TS 19321(2020)
+--
+-- Published version location (yet missing there):
+-- https://standards.iso.org/iso/ts/14823/
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GDD {iso (1) standard (0) gdd(14823) version1 (0)}
+
+DEFINITIONS AUTOMATIC TAGS::=
+BEGIN
+
+--Definition of GDD Structure
+
+GddStructure::= SEQUENCE{
+   pictogramCode           SEQUENCE {
+	countryCode             OCTET STRING (SIZE (2)) OPTIONAL,
+	serviceCategoryCode     CHOICE {
+		trafficSignPictogram       		ENUMERATED {dangerWarning, regulatory, informative,...},
+		publicFacilitiesPictogram       	ENUMERATED {publicFacilities, ...},
+		ambientOrRoadConditionPictogram   ENUMERATED {ambientCondition, roadCondition,...},
+      ...},
+	pictogramCategoryCode   SEQUENCE {
+		nature            INTEGER (1..9),
+		serialNumber       INTEGER (0..99)
+}},
+   attributes        GddAttributes OPTIONAL
+}
+
+-- Definition of the single ISO 14823 Attributes
+GddAttributes::= SEQUENCE (SIZE(1..8),...) OF GddAttribute
+
+GddAttribute::= CHOICE{
+   dtm InternationalSign-applicablePeriod, -- Date/Time/Period
+   edt InternationalSign-exemptedApplicablePeriod,-- Exemption status of Date/Time/Period
+   dfl InternationalSign-directionalFlowOfLane,-- Directional Flow of Lane
+   ved InternationalSign-applicableVehicleDimensions,-- Vehicle Dimensions
+   spe InternationalSign-speedLimits,-- Speed
+   roi InternationalSign-rateOfIncline,-- Rate of Incline
+   dbv InternationalSign-distanceBetweenVehicles,-- Distance Between Vehicles
+   ddd InternationalSign-destinationInformation,-- Destination/Direction/Distance
+   set InternationalSign-section,  -- Section
+   nol InternationalSign-numberOfLane  -- Number of Lanes
+   }
+
+InternationalSign-applicablePeriod::= SEQUENCE {
+   year   SEQUENCE { -- contains yearRangeStartYear and yearRangeEndYear
+      yearRangeStartYear    INTEGER(2000..2127,...),
+      yearRangeEndYear      INTEGER(2000..2127,...)
+      } OPTIONAL,
+   month-day  SEQUENCE { -- contains dateRangeStartMonth&Date and dateRangeEndMonth&Date
+      dateRangeStartMonthDay   MonthDay,
+      dateRangeEndMonthDay     MonthDay
+      } OPTIONAL,
+   repeatingPeriodDayTypes RepeatingPeriodDayTypes OPTIONAL,
+   hourMinutes  SEQUENCE { -- contains timeRangeStartTime and timeRangeEndTime
+      timeRangeStartTime  HoursMinutes,
+      timeRangeEndTime    HoursMinutes
+      } OPTIONAL,
+   dateRangeOfWeek       DayOfWeek OPTIONAL,
+   durationHourMinute   HoursMinutes OPTIONAL
+}
+
+InternationalSign-exemptedApplicablePeriod::= InternationalSign-applicablePeriod
+
+InternationalSign-directionalFlowOfLane::= INTEGER {
+   sDL   (1),-- Straight Direction Only
+   sLT   (2),-- Straight and Left Turn Only
+   sRT   (3),-- Straight and Right Turn Only
+   lTO   (4),-- Left Turn Only
+   rTO   (5),-- Right Turn Only
+   cLL   (6),-- Convergence from the Left Lane
+   cRI   (7),-- Convergence from the Right Lane
+   oVL   (8) -- Oncoming Vehicles Lane
+    } (1..8)
+
+InternationalSign-applicableVehicleDimensions::= SEQUENCE{
+   vehicleHeight   Distance OPTIONAL,
+   vehicleWidth    Distance OPTIONAL,
+   vehicleLength   Distance OPTIONAL,
+   vehicleWeight   Weight 	OPTIONAL
+   }
+
+InternationalSign-speedLimits::= SEQUENCE{
+   speedLimitMax   INTEGER(0..250) OPTIONAL,
+   speedLimitMin   INTEGER(0..250) OPTIONAL,
+   unit   			Code-Units (0..1)
+   }
+
+InternationalSign-rateOfIncline::= INTEGER(1..32)
+
+InternationalSign-distanceBetweenVehicles::= Distance
+
+InternationalSign-destinationInformation::= SEQUENCE{
+   junctionDirection         INTEGER(1..128) OPTIONAL,
+   roundaboutCwDirection     INTEGER(1..128)OPTIONAL,
+   roundaboutCcwDirection    INTEGER(1..128)OPTIONAL,
+   ioList                    DDD-IO-LIST
+   }
+
+InternationalSign-section::= SEQUENCE{
+	startingPointLength   Distance OPTIONAL,
+	continuityLength      Distance OPTIONAL
+   }
+
+InternationalSign-numberOfLane::= INTEGER(0..99)
+
+-- Definition of data elements used in ISO 14823 attributes
+
+Code-Units::= INTEGER {
+   kmperh                  (0),
+   milesperh               (1),
+   kilometre               (2),
+   metre                   (3),
+   decimetre               (4),
+   centimetre              (5),
+   mile                    (6),
+   yard                    (7),
+   foot                    (8),
+   minutesOfTime           (9),
+   tonnes                  (10),--1000 kg, not Ton!
+   hundredkg               (11),
+   pound                   (12),--lbs
+   rateOfIncline           (13),
+   durationinminutes       (14)
+   -- value  15 reserved for future use
+   } (0..15)
+
+DayOfWeek::= BIT STRING {unused(0), monday(1), tuesday(2), wednesday(3), thursday(4), friday(5), saturday(6), sunday(7)} (SIZE (8))
+
+DDD-IO-LIST ::= SEQUENCE (SIZE (1..8,...)) OF DDD-IO
+
+DDD-IO::= SEQUENCE{
+   arrowDirection                 INTEGER(0..7),
+   destPlace                      DestinationPlaces OPTIONAL,
+   destRoad                       DestinationRoads OPTIONAL,
+   roadNumberIdentifier           INTEGER(1..999) OPTIONAL,
+   streetName                     INTEGER(1..999) OPTIONAL,
+   streetNameText                 UTF8String OPTIONAL,
+   distanceToDivergingPoint       DistanceOrDuration OPTIONAL,
+   distanceToDestinationPlace     DistanceOrDuration OPTIONAL
+   }
+
+DestinationPlace::= SEQUENCE{
+   destType   					DestinationType,
+   destRSCode  					GddStructure (WITH COMPONENTS {..., attributes ABSENT}) OPTIONAL,
+   destBlob   					OCTET STRING OPTIONAL,
+   placeNameIdentification   	INTEGER(1..999) OPTIONAL,
+   placeNameText   				UTF8String OPTIONAL
+   }
+
+DestinationPlaces ::= SEQUENCE (SIZE (1..4,...)) OF DestinationPlace
+
+DestinationRoad::= SEQUENCE{
+   derType   				DestinationRoadType,
+   roadNumberIdentifier   	INTEGER(1..999) OPTIONAL,
+   roadNumberText   		UTF8String OPTIONAL
+   }
+
+DestinationRoads ::= SEQUENCE (SIZE (1..4,...)) OF DestinationRoad
+
+DestinationRoadType::= INTEGER {
+   none                   (0),
+   nationalHighway        (1),
+   localHighway           (2),
+   tollExpresswayMotorway (3),
+   internationalHighway   (4),
+   highway                (5),
+   expressway             (6),
+   nationalRoad           (7),
+   regionalProvincialRoad (8),
+   localRoad              (9),
+   motorwayJunction       (10),
+   diversion              (11),
+   rfu1                   (12),
+   rfu2                   (13),
+   rfu3                   (14),
+   rfu4                   (15)
+   } (0..15, ...)
+
+DestinationType::= INTEGER {
+   none   (0),
+   importantArea         (1),
+   principalArea         (2),
+   generalArea           (3),
+   wellKnownPoint        (4),
+   country               (5),
+   city                  (6),
+   street                (7),
+   industrialArea        (8),
+   historicArea          (9),
+   touristicArea         (10),
+   culturalArea          (11),
+   touristicRoute        (12),
+   recommendedRoute      (13),
+   touristicAttraction   (14),
+   geographicArea        (15)
+   } (0..15, ...)
+
+Distance::= SEQUENCE{
+   value    INTEGER(1..16384),
+   unit     Code-Units(2..4|6..8)
+	}
+
+DistanceOrDuration::= SEQUENCE {
+	value INTEGER(1..16384),
+	unit Code-Units (2..9)
+	}
+
+HoursMinutes::= SEQUENCE {
+   hours      INTEGER (0..23),-- number of hours after midnight
+   mins       INTEGER (0..59) -- number of minutes after the hour
+   }
+
+MonthDay::= SEQUENCE {
+   month INTEGER    (1..12),
+   day INTEGER      (1..31)
+   }
+
+RepeatingPeriodDayTypes::= BIT STRING {national-holiday (0), even-days(1), odd-days(2), market-day(3) } (SIZE (4))
+
+Weight::= SEQUENCE {
+	value 	INTEGER(1..16384),
+	unit 	Code-Units (10..12)
+	}
+
+END
+
+CITSapplMgmtIDs {iso(1) standard(0) cits-applMgmt (17419) ids (1) version1 (1)} 
+DEFINITIONS AUTOMATIC TAGS::=BEGIN
+
+IMPORTS
+
+;
+
+-- End of IMPORTS
+
+-- Types
+
+-- Variable length data types
+
+VarLengthNumber::=CHOICE{
+	content	[0]	INTEGER(0..127), -- one octet length
+	extension	[1]	Ext1
+	}
+
+Ext1::=CHOICE{
+	content	[0]	INTEGER(128..16511), -- two octets length
+	extension	[1]	Ext2
+}
+
+Ext2::=CHOICE{
+	content	[0]	INTEGER(16512..2113663), -- three octets length
+	extension	[1]	Ext3
+	}
+
+Ext3::=INTEGER(2113664..270549119,...) -- four and more octets length
+
+
+VarLengthNumber2::=CHOICE{
+	shortNo	[0] INTEGER(0..127),
+	longNo	[1] INTEGER(0..32767)
+	}
+
+
+-- Values
+
+version INTEGER(0..255)::=1 -- version of this module
+
+/*
+   The ASN.1 specification has been checked for conformance to the ASN.1
+   standards by OSS ASN.1 Syntax Checker, and by OSS ASN-1STEP
+*/
+
+END
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- ISO TS 14906 Generic
+--
+-- This ASN.1 was generated: 30.08.2016
+--
+-- This document contains only the data element needed for the encoding of an IVI message
+-- as defined in ISO TS 19321(2020)
+--
+-- Published version location:
+-- https://standards.iso.org/iso/14906/ed-3/en/ISO14906(2018)EfcDsrcGenericv7.asn
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+EfcDsrcGeneric {iso(1) standard(0) 14906 generic(1) version7(7)}
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+AttributeIdList ::= SEQUENCE (SIZE(0.. 127,...)) OF INTEGER(0..127,...)
+
+AttributeList{Container} ::= SEQUENCE (SIZE(0..127,...)) OF Attributes{Container}
+
+Attributes{Container} ::= SEQUENCE {
+	attributeId INTEGER (0..127,...),
+	attributeValue Container
+}
+
+END
+-- Below imported data from ISO 14816's ASN.1 module
+-- AVIAEINumberingAndDataStructures {iso(1) standard(0) 14816 }
+-- DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+-- EXPORTS ALL;
+-- CS5 ::= VisibleString
+-- CountryCode ::= BIT STRING(SIZE(10))
+-- Value assignment is done in accordance with ISO 3166-1 and by
+-- using the ITA.2 alphabet.
+-- IssuerIdentifier ::= INTEGER(0 .. 16383)
+-- See Annex A of ISO 14816 for registration
+-- END
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- ISO TS 14906 App
+--
+-- This ASN.1 was generated: 30.08.2016
+--
+-- This document contains a compile clean version of EfcDsrcApplication module
+--
+-- Published version location:
+-- https://standards.iso.org/iso/14906/ed-3/en/ISO14906(2018)EfcDsrcApplicationv6.asn
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+EfcDsrcApplication {iso(1) standard(0) 14906 application(0) version6(6)}
+DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+EXPORTS ALL;
+IMPORTS
+CountryCode, CS5, IssuerIdentifier
+FROM AVIAEINumberingAndDataStructures {iso(1) standard(0) iso14816(14816) asnm1(1) version1(1) }
+-- defined in ISO 14816 --
+AttributeIdList, Attributes{}, AttributeList{}
+FROM EfcDsrcGeneric {iso(1) standard(0) 14906 generic(1) version7(7)};
+-- NOTE: The following are the definitions of the action and response
+-- parameters
+ActualNumberOfPassengers ::= Int1
+AxleWeightLimits ::= SEQUENCE{
+maxLadenweightOnAxle1 Int2,
+maxLadenweightOnAxle2 Int2,
+maxLadenweightOnAxle3 Int2,
+maxLadenweightOnAxle4 Int2,
+maxLadenweightOnAxle5 Int2
+}
+AddRq::= SEQUENCE {
+attributeId INTEGER(0..127,...),
+value INTEGER
+}
+ChannelId::= INTEGER {
+obu (0),
+sam1 (1), -- secure application module
+sam2 (2),
+icc (3), -- integrated circuit(s) card
+display (4),
+buzzer (5),
+printer (6),
+serialInterface (7), -- serial interface: eg. RS232 and RS485
+parallelInterface (8),
+gPS (9),
+tachograph (10),
+privateUse1 (11), -- free for proprietary use
+privateUse2 (12), -- free for proprietary use
+privateUse3 (13), -- free for proprietary use
+privateUse4 (14), -- free for proprietary use
+privateUse5 (15), -- free for proprietary use
+bluetooth (16)
+-- (17-255) are reserved for future CEN use
+} (0..255)
+ChannelRq::= SEQUENCE{
+channelId ChannelId,
+apdu OCTET STRING
+-- format according to the interface
+-- of the channelId
+}
+ChannelRs::= SEQUENCE{
+channelId ChannelId,
+apdu OCTET STRING
+-- format according to the interface
+-- of the channelId
+}
+CopyRq::= SEQUENCE {
+destinationEID INTEGER(0..127,...),
+attributeIdList AttributeIdList
+}
+CreditRq::= SEQUENCE {
+refund PaymentFee,
+nonce OCTET STRING,
+key INTEGER(0..255)
+}
+CreditRs ::= SEQUENCE {
+creditResult ResultFin,
+creditAuthenticator OCTET STRING
+}
+DebitRq::= SEQUENCE {
+debitPaymentFee PaymentFee,
+nonce OCTET STRING,
+keyRef INTEGER(0..255)
+}
+DebitRs ::= SEQUENCE {
+debitResult ResultFin,
+debitAuthenticator OCTET STRING
+}
+GetInstanceRq ::= SEQUENCE {
+posOfFirstInstance INTEGER(0..255), -- position of first instance to be retrieved
+posOfLastInstance INTEGER(0..255), -- position last instance to be retrieved
+attributeIdList AttributeIdList -- Ids of attributes to be retrieved
+}
+GetInstanceRs{Container}::= SEQUENCE (SIZE (0..127,...)) OF SEQUENCE {
+attributeId INTEGER(0..127,...),
+-- number of instances retrieved
+attributeValues Container (WITH COMPONENTS {octetstring PRESENT})
+-- The octetstring shall contain the contatenation of
+-- the unaligned PER encodings of the values of the
+-- instances, with each encoding padded to an integral
+-- of octets as specified for a top-level type in
+-- ISO/IEC 8825-2
+}
+GetStampedRq::= SEQUENCE {
+attributeIdList AttributeIdList,
+nonce OCTET STRING, -- e.g. a random number
+keyRef INTEGER(0..255)
+}
+GetStampedRs{Container}::= SEQUENCE {
+attributeList AttributeList{Container},
+authenticator OCTET STRING
+}
+SetInstanceRq{Container} ::= SEQUENCE {
+posOfInstance INTEGER(0..255),
+attribute Attributes{Container}
+}
+SetMMIRq::= INTEGER {
+ok (0), -- operation / transaction successfully completed
+nok (1), -- operation / transaction not successfully completed
+contactOperator (2), -- e.g. due to low balance or battery
+noSignalling (255) -- no signalling
+-- (3-127) are reserved for future CEN use
+-- (128-254) are reserved for private use
+} (0..255)
+SetStampedRq{Container}::= SEQUENCE {
+attributeList AttributeList{Container},
+nonce OCTET STRING,
+keyRef INTEGER(0..255)
+}
+SubRq::= SEQUENCE {
+attributeId INTEGER(0..127,...),
+value INTEGER
+}
+-- NOTE: The following are the definitions of EFC attributes
+CO2EmissionValue ::= Int2
+ContractSerialNumber ::= Int4
+ContractAuthenticator ::= OCTET STRING
+ContractValidity ::= SEQUENCE {
+contractRestrictions OCTET STRING (SIZE(4)),
+contractExpiryDate DateCompact
+} -- intended to support ISO/TR 1998 implemented systems
+ContractVehicle ::= LPN
+DateCompact::= SEQUENCE {
+year INTEGER (1990..2117),
+month INTEGER (0..12), -- Value zero shall not be used
+-- except with 1990 - see below.
+day INTEGER (0..31) -- Value zero shall not be used
+-- except with 1990 � see below.
+}
+-- The value "{year 1990, month 0, day 0}" is a 16-bit all-zero
+-- encoding, and is used to represent "no date".
+DescriptiveCharacteristics ::= INTEGER {
+noEntry (0),
+vehicleShape1 (1),
+vehicleShape2 (2),
+vehicleShape3 (3),
+vehicleShape4 (4),
+vehicleShape5 (5),
+vehicleShape6 (6),
+vehicleShape7 (7),
+vehicleShape8 (8),
+vehicleShape9 (9),
+vehicleShape10 (10),
+vehicleShape11 (11),
+vehicleShape12 (12),
+vehicleShape13 (13),
+vehicleShape14 (14),
+vehicleShape15 (15),
+vehicleShape16 (16),
+vehicleShape17 (17),
+vehicleShape18 (18),
+vehicleShape19 (19),
+vehicleShape20 (20),
+vehicleShape21 (21),
+vehicleShape22 (22),
+vehicleShape23 (23),
+vehicleShape24 (24),
+vehicleShape25 (25),
+vehicleShape26 (26),
+vehicleShape27 (27),
+vehicleShape28 (28),
+vehicleShape29 (29),
+vehicleShape30 (30),
+vehicleShape31 (31),
+vehicleShape32 (32),
+vehicleShape33 (33),
+vehicleShape34 (34),
+vehicleShape35 (35),
+vehicleShape36 (36),
+vehicleShape37 (37),
+vehicleShape38 (38),
+vehicleShape39 (39),
+vehicleShape40 (40),
+vehicleShape41 (41),
+vehicleShape42 (42),
+vehicleShape43 (43),
+vehicleShape44 (44),
+vehicleShape45 (45),
+vehicleShape46 (46),
+vehicleShape47 (47),
+vehicleShape48 (48),
+vehicleShape49 (49),
+vehicleShape50 (50)
+-- (1..50) are reserved for future CEN use
+-- (51..255) are reserved for private use
+} (0..255)
+DieselEmissionValues::= SEQUENCE {
+particulate SEQUENCE {
+unitType UnitType,
+value INTEGER (0..32767)
+},
+absorptionCoeff Int2 }
+DriverCharacteristics ::= SEQUENCE {
+driverClass Int1,
+tripPurpose Int1
+}
+EFC-ContextMark ::= SEQUENCE {
+contractProvider Provider,
+typeOfContract OCTET STRING (SIZE(2)),
+contextVersion INTEGER(0..127,...)
+}
+EnvironmentalCharacteristics::= SEQUENCE {
+euroValue EuroValue,
+copValue CopValue
+}
+EuroValue::= ENUMERATED {
+noEntry (0),
+euro-1 (1),
+euro-2 (2),
+euro-3 (3),
+euro-4 (4),
+euro-5 (5),
+euro-6 (6),
+reservedForUse1 (7),
+reservedForUse2 (8),
+reservedForUse3 (9),
+reservedForUse4 (10),
+reservedForUse5 (11),
+reservedForUse6 (12),
+reservedForUse7 (13),
+reservedForUse8 (14),
+eev (15)
+} -- 4 bits, EURO-Classes as defined in EC directive 88/77/EEC, annex 1
+-- and in 91/542/EEC, 96/1/EC, 1999/96/EC, 2001/27/EC, regulation No 595/2009
+-- and for EEV in Section 6.2.1 of Annex I in EC directive 2005/55/EC
+-- EUR-Class VI as defined in Regulation (EC) No 595/2009
+CopValue::= ENUMERATED {
+noEntry (0),
+co2class1 (1), -- below 101 g/km
+co2class2 (2), -- 101 to 120 g/km
+co2class3 (3), -- 121 to 140 g/km
+co2class4 (4), -- 141 to 160 g/km
+co2class5 (5), -- 161 to 200 g/km
+co2class6 (6), -- 201 to 250 g/km
+co2class7 (7), -- above 250 g/km
+reservedforUse (8) -- reserved for future CEN and ISO use
+} -- 4 bits, reserved for carbon dioxide pollution values as defined in
+-- EC directive 2003/127/EC'
+EngineCharacteristics::= INTEGER {
+noEntry (0),
+noEngine (1),
+petrolUnleaded (2),
+petrolLeaded (3),
+diesel (4),
+lPG (5),
+battery (6),
+solar (7),
+hybrid (8),
+hydrogen (9)
+-- (10-255) are reserved for future CEN use
+} (0..255)
+Engine ::= SEQUENCE{
+engineCapacity Int2,
+enginePower Int2
+}
+EquipmentOBUId ::= OCTET STRING
+EquipmentStatus ::= BIT STRING (SIZE(16))
+ExhaustEmissionValues ::= SEQUENCE {
+unitType UnitType,
+emissionCO INTEGER (0..32767),
+emissionHC Int2,
+emissionNOX Int2,
+emissionHCNOX Int2
+}
+FutureCharacteristics ::= INTEGER {
+noEntry (0),
+airSuspension (1)
+-- (2..255) are reserved for future CEN use
+} (0..255)
+ICC-Id ::= OCTET STRING
+Int1 ::= INTEGER(0..255)
+Int2 ::= INTEGER(0..65535)
+Int3 ::= INTEGER(0..16777215)
+Int4 ::= INTEGER(0..4294967295)
+LPN::= SEQUENCE {
+countryCode CountryCode,
+alphabetIndicator ENUMERATED {
+latinAlphabetNo1 (1), -- encoded as 00 00 00'B
+latinAlphabetNo2 (2), -- encoded as 00 00 01'B etc
+latinAlphabetNo3 (3),
+latinAlphabetNo4 (4),
+latinCyrillicAlphabet (5),
+latinArabicAlphabet (6),
+latinGreekAlphabet (7),
+latinHebrewAlphabet (8),
+latinAlphabetNo5 (9),
+latinAlphabetNo6 (10),
+twoOctetBMP (11),
+fourOctetCanonical (12),
+reservedForUse1 (13),
+reservedForUse2 (14),
+reservedForUse3 (15),
+reservedForUse4 (16),
+reservedForUse5 (17),
+reservedForUse6 (18),
+reservedForUse7 (19),
+reservedForUse8 (20),
+reservedForUse9 (21),
+reservedForUse10 (22),
+reservedForUse11 (23),
+reservedForUse12 (24),
+reservedForUse13 (25),
+reservedForUse14 (26),
+reservedForUse15 (27),
+reservedForUse16 (28),
+reservedForUse17 (29),
+reservedForUse18 (30),
+reservedForUse19 (31),
+reservedForUse20 (32),
+reservedForUse21 (33)
+} -- 6 bits, latinAlphabetNo1 recommended -- ,
+-- refer to Annex E for conversion from LatinAlphabetNo 2
+-- and 5 to Latin AlphabetNo1
+licencePlateNumber OCTET STRING
+}
+PassengerCapacity ::= SEQUENCE{
+numberOfSeats Int1,
+numberOfStandingPlaces Int1
+}
+PaymentFee ::= SEQUENCE {
+-- The fee (toll, charge or fare) which is requested by the
+-- service provider for the service provided or to be provided.
+paymentFeeAmount Int2,
+-- paymentFeeAmount is the value of the fee being charged for the
+-- service. If no unit (payment fee unit) is specified, then
+-- it is known by default.
+paymentFeeUnit PayUnit
+-- paymentFeeUnit is the unit in which the fee is expressed.
+}
+PaymentMeans ::= SEQUENCE {
+personalAccountNumber PersonalAccountNumber,
+paymentMeansExpiryDate DateCompact,
+pamentMeansUsageControl OCTET STRING(SIZE(2))
+-- issuer's specified restrictions, on the geographic usage
+-- and services allowed for the applications
+}
+PaymentMeansBalance ::= SignedValue
+SignedValue ::= CHOICE {
+positive INTEGER (0..8388607),
+negative INTEGER (-8388608..-1)
+}
+-- corresponds to a �3 octets Signed Integer�, associated with the following
+-- examples of line codes:
+-- -8'388'608 : 80 00 00'H
+-- -1 : FF FF FF'H
+-- 0 : 00 00 00'H
+-- 1 : 00 00 01�H
+-- 8'388'607 : 7F FF FF'H
+PaymentMeansUnit ::= PayUnit
+PaymentSecurityData ::= OCTET STRING
+PayUnit ::= OCTET STRING (SIZE(2))
+-- The unique designation of a Currency as defined in ISO 4217
+-- using the ISO numeric binary coded decimal representation.
+-- The code can also express a company specific token or a
+-- "charging unit code" as used in the freight.unit in which
+-- the fee is expressed.
+-- Value Assignment :
+-- '0xxx'H Currency in main units
+-- '1xxx'H Currency in minor units of 10 :1 ('dime')
+-- '2xxx'H Currency in minor units of 100 :1 ('cents')
+-- '3xxx'H Currency in minor units of 1000 :1
+-- '4xxx'H Currency in 'major' units / 10
+-- (e.g. 10 Belgian Francs)
+-- '5xxx'H Currency in 'major' units / 100
+-- (e.g. 100 Italian Lire)
+-- '6xxx'H Currency in 'major' units / 1000
+-- '7xxx'H Currency in 'major' units / 10000
+-- '8xxx'H Currency in 'major' units / 100000
+-- where xxx is the BCD representation of "Currency"
+-- as defined in ISO 4217
+-- '9xxx'H Tokens
+-- where xxx is Purse Provider specific coding.
+-- 'Axxx'H Charging Unit Codes,
+-- denoting quantification of the service provided
+-- (e.g. man-hours)
+PersonalAccountNumber ::= OCTET STRING (SIZE(10))
+-- Personal account number structure � according to ISO/IEC 7812-1
+-- Issuer identifier number (�BIN�)
+-- Major industry identifier (MII, 1 binary coded decimal, BCD)
+-- 0 : reserved for future use by ISO/TC68
+-- 1 : airline sector
+-- 2 : extended airline sector
+-- 3 : travel and tourism sector
+-- 4 : financial banking sector
+-- 5 : financial banking sector
+-- 6 : commerce and banking sector
+-- 7 : petrol industry sector
+-- 8 : telecommunication sector
+-- 9 : reserved for national use
+-- Issuer identifier (5 BCD in the second edition of ISO/IEC 7812-1)
+-- Account number (max 12 BCD)
+-- Control digit (1 BCD)
+-- Padding bits, set to 1'B, in order to accomplish a
+-- total length of 10 octets.
+
+Provider ::= SEQUENCE {
+countryCode CountryCode,
+providerIdentifier IssuerIdentifier
+}
+PurseBalance ::= SEQUENCE {
+-- The balance on the (electronic) purse, consisting of
+-- the value and the unit in which it is expressed.
+purseValue SignedValue,
+-- The size of a balance expressed in a currency.
+-- This may be positive or negative.
+purseUnit PayUnit
+}
+ReceiptContract ::= SEQUENCE {
+sessionContractProvider Provider,
+sessionTypeOfContract OCTET STRING(SIZE(2)),
+sessionContractSerialNumber Int4
+}
+ReceiptData1 ::= ReceiptData
+ReceiptData2 ::= ReceiptData
+ReceiptData ::= SEQUENCE {
+sessionTime DateAndTime,
+sessionServiceProvider Provider,
+locationOfStation Int2,
+sessionLocation SessionLocation,
+sessionType Int1,
+sessionResult ResultOp,
+sessionTariffClass Int1,
+sessionClaimedClass Int1,
+sessionFee PaymentFee,
+sessionContractProvider Provider,
+sessionTypeOfContract OCTET STRING (SIZE(2)),
+sessionContextVersion INTEGER (0..127,...),
+receiptDataAuthenticator OCTET STRING(SIZE(4))
+}
+ReceiptDistance ::= Int3
+ReceiptFinancialPart ::= SEQUENCE {
+personalAccountNumber PersonalAccountNumber,
+sessionPaymentFee PaymentFee,
+sessionCurrentBalance PurseBalance,
+receiptFinancialSerialNumber Int4
+}
+ReceiptICC-Id ::= ICC-Id
+ReceiptOBUId ::= OCTET STRING
+ReceiptServicePart ::= SEQUENCE {
+sessionTime DateAndTime,
+sessionServiceProvider Provider,
+stationLocation INTEGER(0..1048575),
+sessionLocation BIT STRING (SIZE(8)),
+typeOfSession StationType,
+sessionResultOperational ResultOp,
+sessionResultFinancial ResultFin
+}
+ReceiptServiceSerialNumber ::= Int3
+ReceiptAuthenticator ::= OCTET STRING
+ReceiptText ::= OCTET STRING
+ResultFin ::= OCTET STRING (SIZE(1))
+-- A code designating whether a card transaction was completed successfully
+-- or not. Value Assignment : Hexadecimal
+-- Most significant 4 bits: 0 OK :
+-- '0x'H OK
+-- Most significant 4 bits > 0 Not OK :
+-- '1x'H Not OK, not specified further
+-- '2x'H Not OK, Abnormal (First or Previous) Event
+-- '3x'H Not OK, Contract not accepted
+-- '4x'H Not OK, Account or Purse not accepted
+-- 'x0'H not specified further
+-- 'x1'H Balance close to zero
+-- 'x2'H Balance now negative
+-- 'x3'H Balance Overflow
+-- 'x4'H Provider not accepted
+-- 'x5'H Authentication failure
+-- x6'H Vehicle Class incorrect
+ResultOp ::= INTEGER {
+correctTransaction (0), -- transaction correct
+obeStatusNotAccepted (1),
+equipmentStatusNotAccepted (2),
+contractNotInWhiteList (3),
+-- VST contract data not in white list
+contractIdentifierInBlackList (4),
+contractIdentifierNotCorrect (5),
+-- Luhn algorithm verification failure
+expiredContract (6), -- contract expired
+contractRestrictionsNotFulfilled (7),
+claimedVehicleCharacteristicsNotValid (8),
+vehicleClassAuthenticationFailed (9),
+entryVehicleClassDifferentFromExitVehicleClass (10),
+entryReceiptMissing (11),
+entryReceiptNotValid (12),
+entryTollStationNotValid (13),
+equipmentNotCertified (14),
+-- manufacturer or EquipClass not recognised
+timeDifference (15),
+-- problem with the time diff of the two latest receipts
+accessCredentialsNotAccepted (16),
+contractAuthenticatorNotAccepted (17),
+receiptAuthenticatorNotAccepted (18),
+claimedVehicleCharacteristicsMissing (19),
+paymentMeansNotAccepted (20),
+paymentAuthenticatorNotAccepted (21),
+paymentMeansInBlackList (22),
+paymentMeansNotCorrect (23),
+-- Luhn algorithm verification failure
+expiredPaymentMeans (24),
+-- PaymentMeans expired
+paymentMeansRestrictionsNotFulfilled (25)
+-- (26-255) are reserved for future CEN use
+} (0..255)
+SessionClass ::= SEQUENCE {
+sessionTariffClass Int1,
+sessionClaimedClass Int1
+}
+SessionLocation ::= SEQUENCE {
+ascendingKilometrage BOOLEAN, -- travel direction indicator
+laneCodeNumber INTEGER(0..127) -- lane code number
+}
+StationType ::= ENUMERATED {
+unspecified (0),
+closedEntryWithPayment (1),
+closedEntryWithoutPayment (2),
+closedTransit (3),
+closedExit (4),
+closedCredit (5),
+mixed (6),
+passage (7), -- open exit
+checkpoint (8),
+reload (9),
+reservedForFutureCENUse1 (10),
+reservedForFutureCENUse2 (11),
+reservedForFutureCENUse3 (12),
+reservedForFutureCENUse4 (13),
+privateUse5 (14),
+privateUse6 (15)
+}
+DateAndTime ::= SEQUENCE {
+timeDate DateCompact,
+timeCompact SEQUENCE { -- expresses time of the day in hours, min, and sec
+hours INTEGER (0..23), -- number of hours after midnight
+mins INTEGER (0..59), -- number of minutes after the hour
+double-secs INTEGER (0..30) -- number of two-seconds after the minute
+}
+-- Midnight at the start of a day cannot be represented.
+-- Midnight at the end of a day is represented by
+-- {hours 23, mins 59, double-secs 30}
+-- The 16 bit zero value {hours 0, mins 0, double-secs 0}
+-- denotes "no time"
+}
+SoundLevel ::= SEQUENCE{
+soundstationary Int1,
+sounddriveby Int1
+}
+TrailerCharacteristics ::= SEQUENCE {
+trailerDetails TrailerDetails,
+trailerMaxLadenWeight Int2,
+trailerWeightUnladen Int2
+}
+TrailerDetails::= SEQUENCE {
+trailerType INTEGER{
+notPresent (0), -- trailer not attached or only one trailer attached, see
+-- VehicleAxlesNumber for more information
+trailer (1), -- also known as pull-bar trailer
+semitrailer (2) -- also known as articulate trailer
+-- (3..31) reserved for future CEN/ISO use
+} (0..31),
+trailerAxles TrailerAxles
+}
+TrailerLicencePlateNumber ::= LPN
+UnitType::= ENUMERATED {
+mg-km (0),
+mg-kWh (1)
+}
+ValidityOfContract ::= SEQUENCE {
+issuerRestrictions OCTET STRING (SIZE(2)),
+contractExpiryDate DateCompact
+}
+VehicleAuthenticator ::= OCTET STRING
+VehicleAxles ::= SEQUENCE {
+vehicleFirstAxleHeight Int1,
+vehicleAxlesNumber SEQUENCE {
+tyreType ENUMERATED{
+notSpecified (0),
+singleTyre (1), -- single tyre on all axles
+dualTyres (2), -- dual tyres on at least one axle
+reservedForUse (3) -- reserved for future CEN use
+},
+numberOfAxles SEQUENCE {
+trailerAxles TrailerAxles,
+tractorAxles TractorAxles
+}
+}
+}
+TrailerAxles ::= INTEGER (0..7) -- number of axles of the trailer when available
+TractorAxles ::= INTEGER (0..7) -- number of axles of the tractor
+VehicleClass ::= Int1
+VehicleDimensions ::= SEQUENCE {
+vehicleLengthOverall Int1,
+vehicleHeigthOverall Int1,
+vehicleWidthOverall Int1
+}
+VehicleLicencePlateNumber ::= LPN
+VehicleIdentificationNumber ::= CS5
+VehicleSpecificCharacteristics ::= SEQUENCE {
+environmentalCharacteristics EnvironmentalCharacteristics,
+engineCharacteristics EngineCharacteristics,
+descriptiveCharacteristics DescriptiveCharacteristics,
+futureCharacteristics FutureCharacteristics
+}
+VehicleTotalDistance ::= Int4
+VehicleWeightLaden ::= Int2
+VehicleCurrentMaxTrainWeight ::= Int2
+VehicleWeightLimits ::= SEQUENCE {
+vehicleMaxLadenWeight Int2,
+vehicleTrainMaximumWeight Int2,
+vehicleWeightUnladen Int2
+}
+END
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- ISO TS 19091 2018
+--
+-- This document includes three ASN.1 modules
+--    AddGrpC
+--    REGION
+--    DSRC
+--
+-- This document contains the data element needed for the encoding the SPAT, MapData, SignalRequestMessage, SignalStatusMessage, RTCMcorrections
+-- as defined in ISO TS 19091 and basic data element referenced to SAEJ2735
+--
+-- It includes the addendum extensions for Addgrp-C (e.g. Europe)
+-- 
+-- ISO Standards maintenance Portal:
+-- http://standards.iso.org/iso/ts/19091/addgrp_c/
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-- ^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-
+-- 
+-- module: AddGrpC
+-- 
+-- ^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-
+AddGrpC {
+  iso (1) standard (0) signalizedIntersection (19091) profilec (2) addgrpc (0)
+  version2 (2)
+  }
+
+DEFINITIONS AUTOMATIC TAGS::= BEGIN
+
+IMPORTS
+
+DeltaTime, FuelType, IntersectionID, LaneConnectionID, LaneID, NodeOffsetPointXY, NodeSetXY, PrioritizationResponseStatus, SignalGroupID, VehicleHeight
+FROM DSRC { 
+  iso (1) standard (0) signalizedIntersection (19091) profilec(2) dsrc (2) version2 (2)
+}
+
+
+Altitude, DeltaAltitude, StationID, VehicleMass
+FROM ITS-Container { itu-t (0) identified-organization (4) etsi (0) itsDomain (5) wg1 (1) ts (102894) cdd (2) version (2) };
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- AddGrpC data dictionary extensions to SAEJ2735 
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ConnectionManeuverAssist-addGrpC ::=	SEQUENCE {
+  itsStationPosition ItsStationPositionList OPTIONAL,
+  ...
+}
+
+ConnectionTrajectory-addGrpC ::= SEQUENCE { 
+  nodes         NodeSetXY,
+  connectionID  LaneConnectionID,
+  ...
+}
+
+IntersectionState-addGrpC ::=	SEQUENCE {
+  activePrioritizations  PrioritizationResponseList	OPTIONAL,
+  ...
+}
+
+LaneAttributes-addGrpC ::= SEQUENCE {
+  maxVehicleHeight  VehicleHeight OPTIONAL,
+  maxVehicleWeight  VehicleMass   OPTIONAL,
+  ...
+}
+
+MapData-addGrpC ::=	SEQUENCE {
+  signalHeadLocations  SignalHeadLocationList	OPTIONAL,
+  ...
+}
+
+MovementEvent-addGrpC ::= SEQUENCE {
+  stateChangeReason  ExceptionalCondition OPTIONAL,
+  ...
+}
+
+NodeAttributeSet-addGrpC  ::=	SEQUENCE { 
+  ptvRequest  PtvRequestType  OPTIONAL,
+  nodeLink    NodeLink        OPTIONAL,
+  node        Node            OPTIONAL,
+  ...
+}
+
+Position3D-addGrpC ::=	SEQUENCE {
+  altitude  Altitude,
+  ...
+}
+
+RestrictionUserType-addGrpC ::=	SEQUENCE { 
+  emission  EmissionType OPTIONAL,
+  fuel      FuelType     OPTIONAL,
+  ...
+}
+
+RequestorDescription-addGrpC ::= SEQUENCE {
+  fuel           FuelType      OPTIONAL,
+  batteryStatus  BatteryStatus OPTIONAL,
+  ...
+}
+
+SignalStatusPackage-addGrpC ::= SEQUENCE {
+  synchToSchedule  DeltaTime      OPTIONAL,
+  rejectedReason   RejectedReason OPTIONAL,
+  ...
+}
+
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Data frames
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ItsStationPosition ::=	SEQUENCE {
+  stationID      StationID,
+  laneID         LaneID             OPTIONAL,
+  nodeXY         NodeOffsetPointXY  OPTIONAL,
+  timeReference  TimeReference      OPTIONAL,
+  ...
+}
+
+ItsStationPositionList ::=	SEQUENCE SIZE(1..5) OF ItsStationPosition
+
+Node ::= SEQUENCE {
+  id              INTEGER,
+  lane            LaneID           OPTIONAL,
+  connectionID    LaneConnectionID OPTIONAL,
+  intersectionID  IntersectionID   OPTIONAL,
+  ...
+}
+
+NodeLink ::= SEQUENCE SIZE (1..5) OF Node
+
+PrioritizationResponse ::=	SEQUENCE {
+  stationID    StationID,
+  priorState   PrioritizationResponseStatus,
+  signalGroup  SignalGroupID,
+  ...
+}
+
+PrioritizationResponseList ::=	SEQUENCE SIZE(1..10) OF PrioritizationResponse
+
+SignalHeadLocation ::=	SEQUENCE {
+  nodeXY         NodeOffsetPointXY,
+  nodeZ          DeltaAltitude,
+  signalGroupID  SignalGroupID,
+  ...
+}
+
+SignalHeadLocationList ::=	SEQUENCE (SIZE(1..64)) OF	SignalHeadLocation
+
+
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- Data elements 
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+BatteryStatus ::= ENUMERATED {
+  unknown,
+  critical,
+  low,
+  good, 
+  ...
+}
+
+EmissionType ::= ENUMERATED {
+  euro1,
+  euro2,
+  euro3,
+  euro4,
+  euro5,
+  euro6,
+  ...
+}
+
+ExceptionalCondition ::= ENUMERATED {
+  unknown,
+  publicTransportPriority,
+  emergencyVehiclePriority,
+  trainPriority,
+  bridgeOpen,
+  vehicleHeight,
+  weather,
+  trafficJam,
+  tunnelClosure,
+  meteringActive,
+  truckPriority,
+  bicyclePlatoonPriority,
+  vehiclePlatoonPriority,
+  ...
+}
+
+PtvRequestType  ::= ENUMERATED {
+  preRequest,
+  mainRequest,
+  doorCloseRequest,
+  cancelRequest,
+  emergencyRequest,
+  ...
+}
+
+RejectedReason ::= ENUMERATED {
+  unknown,
+  exceptionalCondition,
+  maxWaitingTimeExceeded,
+  ptPriorityDisabled,
+  higherPTPriorityGranted,
+  vehicleTrackingUnknown,
+  ...
+}
+
+TimeReference ::= INTEGER { oneMilliSec(1) } (0..60000)
+
+END
+
+
+-- ^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-
+-- 
+-- module: REGION
+-- 
+-- ^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-
+
+REGION {
+  iso (1) standard (0) signalizedIntersection (19091) profilec (2) region (1)
+  version2 (2)
+}
+
+DEFINITIONS AUTOMATIC TAGS::= BEGIN
+
+IMPORTS
+
+addGrpC, REG-EXT-ID-AND-TYPE 
+FROM DSRC { 
+  iso (1) standard (0) signalizedIntersection (19091) profilec(2) dsrc (2) version2 (2)
+}
+
+ConnectionManeuverAssist-addGrpC, ConnectionTrajectory-addGrpC,
+IntersectionState-addGrpC, LaneAttributes-addGrpC, MapData-addGrpC,
+MovementEvent-addGrpC, NodeAttributeSet-addGrpC, Position3D-addGrpC, RequestorDescription-addGrpC, RestrictionUserType-addGrpC, SignalStatusPackage-addGrpC
+FROM AddGrpC {iso (1) standard (0) signalizedIntersection (19091) profilec(2) addgrpc (0) version2 (2)};
+
+Reg-AdvisorySpeed	            REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-ComputedLane	            REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-ConnectionManeuverAssist	REG-EXT-ID-AND-TYPE ::= {
+	{ConnectionManeuverAssist-addGrpC  IDENTIFIED BY addGrpC},
+	...
+}
+
+Reg-GenericLane	             REG-EXT-ID-AND-TYPE ::= {
+	{ConnectionTrajectory-addGrpC	IDENTIFIED BY addGrpC} ,
+	...
+}
+
+Reg-IntersectionGeometry  	  REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-IntersectionState           REG-EXT-ID-AND-TYPE ::= {
+	{IntersectionState-addGrpC IDENTIFIED BY addGrpC},
+	...
+}
+
+Reg-LaneAttributes	             REG-EXT-ID-AND-TYPE ::= {
+   {LaneAttributes-addGrpC IDENTIFIED BY addGrpC} ,
+   ...
+}
+Reg-LaneDataAttribute           REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-MapData	REG-EXT-ID-AND-TYPE ::= {
+	{MapData-addGrpC  IDENTIFIED BY addGrpC},
+	...
+}
+
+Reg-MovementEvent	            REG-EXT-ID-AND-TYPE ::= {
+   {MovementEvent-addGrpC IDENTIFIED BY addGrpC} ,
+   ...
+}
+Reg-MovementState               REG-EXT-ID-AND-TYPE ::= { ... }
+
+-- Reg-NodeAttributeSetLL       REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-NodeAttributeSetXY          REG-EXT-ID-AND-TYPE ::= {
+	{NodeAttributeSet-addGrpC   IDENTIFIED BY addGrpC},
+	...
+}
+
+-- Reg-NodeOffsetPointLL	   REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-NodeOffsetPointXY	       REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-Position3D	              REG-EXT-ID-AND-TYPE ::= {
+	{Position3D-addGrpC  IDENTIFIED BY addGrpC} ,
+	...
+}
+
+Reg-RequestorDescription      REG-EXT-ID-AND-TYPE ::= {
+   { RequestorDescription-addGrpC IDENTIFIED BY addGrpC} ,
+   ...
+}
+
+Reg-RequestorType	            REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-RestrictionUserType	  REG-EXT-ID-AND-TYPE ::= {
+  {RestrictionUserType-addGrpC IDENTIFIED BY addGrpC} ,
+  ...
+}
+
+Reg-RoadSegment	             REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-RTCMcorrections             REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalControlZone           REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalRequest               REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalRequestMessage        REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalRequestPackage        REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalStatus	        REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalStatusMessage	 REG-EXT-ID-AND-TYPE ::= { ... }
+
+Reg-SignalStatusPackage	 REG-EXT-ID-AND-TYPE ::= {
+	{ SignalStatusPackage-addGrpC IDENTIFIED BY addGrpC },
+	...
+}
+
+Reg-SPAT	                   REG-EXT-ID-AND-TYPE ::= { ... }
+
+END
+
+-- ^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-
+-- 
+-- module: DSRC
+--
+-- ^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-^-
+
+DSRC { 
+  iso (1) standard (0) signalizedIntersection (19091) profilec(2) dsrc (2) version2 (2)
+} 
+
+DEFINITIONS AUTOMATIC TAGS::= BEGIN 
+
+IMPORTS
+
+Longitude, Latitude, StationID
+FROM ITS-Container { itu-t (0) identified-organization (4) etsi (0) itsDomain (5) wg1 (1) ts (102894) cdd (2) version (2) }
+
+Reg-AdvisorySpeed, Reg-ComputedLane, Reg-ConnectionManeuverAssist, Reg-GenericLane,
+Reg-IntersectionGeometry, Reg-IntersectionState, Reg-LaneAttributes, Reg-MapData,
+Reg-LaneDataAttribute, Reg-MovementEvent, Reg-MovementState,
+Reg-NodeAttributeSetXY, Reg-NodeOffsetPointXY, Reg-Position3D, Reg-RequestorDescription, Reg-RequestorType, Reg-RestrictionUserType, Reg-RoadSegment,
+Reg-RTCMcorrections, Reg-SignalControlZone, Reg-SignalRequestPackage, Reg-SignalRequest, Reg-SignalStatus, Reg-SignalStatusPackage, Reg-SignalRequestMessage,
+Reg-SignalStatusMessage, Reg-SPAT
+FROM REGION  {iso (1) standard (0) signalizedIntersection (19091) profilec(2) region (1) version2 (2)}
+
+
+Iso3833VehicleType
+FROM ElectronicRegistrationIdentificationVehicleDataModule { iso(1) standard(0) iso24534 (24534) vehicleData (1) version1 (1) };
+
+-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+-- Messages
+-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+
+REG-EXT-ID-AND-TYPE ::= CLASS {
+  &id     RegionId UNIQUE,
+  &Type
+} WITH SYNTAX {&Type IDENTIFIED BY &id}
+
+RegionalExtension {REG-EXT-ID-AND-TYPE : Set} ::= SEQUENCE {
+  regionId     REG-EXT-ID-AND-TYPE.&id( {Set} ),
+  regExtValue  REG-EXT-ID-AND-TYPE.&Type( {Set}{@regionId} )
+}
+ 
+MapData ::= SEQUENCE {
+  timeStamp         MinuteOfTheYear OPTIONAL, 
+  msgIssueRevision  MsgCount,        
+  layerType         LayerType OPTIONAL,
+  layerID           LayerID  OPTIONAL,
+  intersections     IntersectionGeometryList OPTIONAL,
+  roadSegments      RoadSegmentList OPTIONAL,
+  dataParameters    DataParameters OPTIONAL,
+  restrictionList   RestrictionClassList OPTIONAL,
+  regional          SEQUENCE (SIZE(1..4)) OF 
+                    RegionalExtension {{Reg-MapData}} OPTIONAL,
+  ...
+}
+
+RTCMcorrections ::= SEQUENCE {
+   msgCnt      MsgCount, 
+   rev         RTCM-Revision,
+   timeStamp   MinuteOfTheYear  OPTIONAL,
+   anchorPoint FullPositionVector OPTIONAL,
+   rtcmHeader  RTCMheader OPTIONAL,  
+   msgs        RTCMmessageList,
+   regional    SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-RTCMcorrections}} OPTIONAL,
+   ...
+}
+
+SPAT ::= SEQUENCE { 
+  timeStamp     MinuteOfTheYear OPTIONAL,  
+  name          DescriptiveName OPTIONAL, 
+  intersections IntersectionStateList,
+  regional      SEQUENCE (SIZE(1..4)) OF 
+                RegionalExtension {{Reg-SPAT}} OPTIONAL,
+  ...
+}
+
+SignalRequestMessage ::= SEQUENCE {    
+  timeStamp       MinuteOfTheYear  OPTIONAL,
+  second          DSecond,
+  sequenceNumber  MsgCount         OPTIONAL,
+  requests        SignalRequestList OPTIONAL,
+  requestor       RequestorDescription,
+  regional        SEQUENCE (SIZE(1..4)) OF 
+                  RegionalExtension {{Reg-SignalRequestMessage}} OPTIONAL,
+  ...
+}
+
+SignalStatusMessage ::= SEQUENCE {
+  timeStamp       MinuteOfTheYear  OPTIONAL,
+  second          DSecond,
+  sequenceNumber  MsgCount         OPTIONAL,            
+  status          SignalStatusList,
+  regional        SEQUENCE (SIZE(1..4)) OF 
+                  RegionalExtension {{Reg-SignalStatusMessage}} OPTIONAL,
+  ...
+}
+
+
+
+
+-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+-- Start of entries from table Data_Frames...
+-- Data frames 
+-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+
+AdvisorySpeed ::= SEQUENCE {
+  type        AdvisorySpeedType,
+  speed       SpeedAdvice OPTIONAL,
+  confidence  SpeedConfidence OPTIONAL,
+  distance    ZoneLength OPTIONAL,
+  class       RestrictionClassID OPTIONAL,
+  regional    SEQUENCE (SIZE(1..4)) OF 
+              RegionalExtension {{Reg-AdvisorySpeed}} OPTIONAL,
+  ...
+}
+
+AdvisorySpeedList ::= SEQUENCE (SIZE(1..16)) OF AdvisorySpeed
+
+AntennaOffsetSet ::= SEQUENCE { 
+   antOffsetX  Offset-B12,
+   antOffsetY  Offset-B09,
+   antOffsetZ  Offset-B10
+   }
+
+ComputedLane ::= SEQUENCE {
+  referenceLaneId    LaneID,
+  offsetXaxis        CHOICE {
+                        small   DrivenLineOffsetSm, 
+                        large   DrivenLineOffsetLg
+                        },  
+  offsetYaxis        CHOICE {
+                        small   DrivenLineOffsetSm, 
+                        large   DrivenLineOffsetLg
+                        },  
+  rotateXY           Angle OPTIONAL, 
+  scaleXaxis         Scale-B12 OPTIONAL, 
+  scaleYaxis         Scale-B12 OPTIONAL, 
+  regional  SEQUENCE (SIZE(1..4)) OF 
+            RegionalExtension {{Reg-ComputedLane}} OPTIONAL,
+  ... 
+}
+
+ConnectsToList ::= SEQUENCE (SIZE(1..16)) OF Connection
+
+ConnectingLane ::= SEQUENCE {
+  lane      LaneID,
+  maneuver  AllowedManeuvers OPTIONAL
+}
+
+Connection ::= SEQUENCE {
+  connectingLane     ConnectingLane, 
+  remoteIntersection IntersectionReferenceID OPTIONAL,  
+  signalGroup        SignalGroupID OPTIONAL,    
+  userClass          RestrictionClassID OPTIONAL, 
+  connectionID       LaneConnectionID OPTIONAL
+}
+
+ConnectionManeuverAssist ::= SEQUENCE {
+  connectionID         LaneConnectionID,
+  queueLength          ZoneLength OPTIONAL,
+  availableStorageLength ZoneLength OPTIONAL,
+  waitOnStop           WaitOnStopline OPTIONAL,
+  pedBicycleDetect     PedestrianBicycleDetect OPTIONAL,
+  regional  SEQUENCE (SIZE(1..4)) OF 
+            RegionalExtension {{Reg-ConnectionManeuverAssist}} OPTIONAL,
+  ...  
+}
+
+DataParameters ::= SEQUENCE {
+  processMethod     IA5String(SIZE(1..255)) OPTIONAL, 
+  processAgency     IA5String(SIZE(1..255)) OPTIONAL, 
+  lastCheckedDate   IA5String(SIZE(1..255)) OPTIONAL, 
+  geoidUsed         IA5String(SIZE(1..255)) OPTIONAL, 
+  ...  
+}
+
+
+DDateTime ::= SEQUENCE {
+   year    DYear    OPTIONAL,    
+   month   DMonth   OPTIONAL,   
+   day     DDay     OPTIONAL,  
+   hour    DHour    OPTIONAL,   
+   minute  DMinute  OPTIONAL,  
+   second  DSecond  OPTIONAL,  
+   offset  DOffset  OPTIONAL
+   }
+
+EnabledLaneList ::= SEQUENCE (SIZE(1..16)) OF LaneID
+
+FullPositionVector ::= SEQUENCE {
+   utcTime             DDateTime OPTIONAL,   -- time with mSec precision
+   long                Longitude,
+   lat                 Latitude,
+   elevation           Elevation  OPTIONAL,
+   heading             Heading OPTIONAL, 
+   speed               TransmissionAndSpeed OPTIONAL,
+   posAccuracy         PositionalAccuracy OPTIONAL,
+   timeConfidence      TimeConfidence OPTIONAL,
+   posConfidence       PositionConfidenceSet OPTIONAL,
+   speedConfidence     SpeedandHeadingandThrottleConfidence OPTIONAL, 
+   ...  
+   }
+
+
+GenericLane ::= SEQUENCE { 
+  laneID           LaneID, 
+  name             DescriptiveName OPTIONAL,        
+  ingressApproach  ApproachID OPTIONAL,
+  egressApproach   ApproachID OPTIONAL,
+  laneAttributes   LaneAttributes, 
+  maneuvers        AllowedManeuvers OPTIONAL,
+  nodeList         NodeListXY,
+  connectsTo       ConnectsToList OPTIONAL, 
+  overlays         OverlayLaneList OPTIONAL, 
+  regional  SEQUENCE (SIZE(1..4)) OF 
+            RegionalExtension {{Reg-GenericLane}} OPTIONAL,
+  ...
+}
+
+IntersectionAccessPoint ::= CHOICE {
+  lane       LaneID,
+  approach   ApproachID,
+  connection LaneConnectionID,
+  ...
+}
+
+IntersectionGeometry ::= SEQUENCE {
+  name        DescriptiveName OPTIONAL, 
+  id          IntersectionReferenceID,  
+  revision    MsgCount,    
+  refPoint    Position3D,
+  laneWidth   LaneWidth OPTIONAL,   
+  speedLimits SpeedLimitList OPTIONAL, 
+  laneSet     LaneList,
+  preemptPriorityData PreemptPriorityList OPTIONAL, 
+  regional     SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-IntersectionGeometry}} OPTIONAL,
+  ... 
+}
+
+IntersectionGeometryList ::= SEQUENCE (SIZE(1..32)) OF IntersectionGeometry
+   
+IntersectionReferenceID ::= SEQUENCE {
+  region  RoadRegulatorID OPTIONAL,
+  id      IntersectionID
+}
+
+IntersectionState ::= SEQUENCE {
+  name         DescriptiveName OPTIONAL, 
+  id           IntersectionReferenceID,  
+  revision     MsgCount,    
+  status       IntersectionStatusObject,
+  moy          MinuteOfTheYear OPTIONAL,
+  timeStamp    DSecond OPTIONAL, 
+  enabledLanes EnabledLaneList OPTIONAL,  
+  states       MovementList,
+  maneuverAssistList  ManeuverAssistList OPTIONAL,
+  regional     SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-IntersectionState}} OPTIONAL,
+  ... 
+}
+
+IntersectionStateList ::= SEQUENCE (SIZE(1..32)) OF  IntersectionState
+
+LaneAttributes ::= SEQUENCE {
+  directionalUse  LaneDirection,
+  sharedWith      LaneSharing,
+  laneType        LaneTypeAttributes,
+  regional        RegionalExtension {{Reg-LaneAttributes}} OPTIONAL
+}
+
+LaneDataAttribute ::= CHOICE {
+   pathEndPointAngle        DeltaAngle,  
+   laneCrownPointCenter     RoadwayCrownAngle,  
+   laneCrownPointLeft       RoadwayCrownAngle,  
+   laneCrownPointRight      RoadwayCrownAngle,  
+   laneAngle                MergeDivergeNodeAngle,  
+   speedLimits              SpeedLimitList,
+   regional  SEQUENCE (SIZE(1..4)) OF 
+             RegionalExtension {{Reg-LaneDataAttribute}}, 
+   ...
+}
+
+LaneDataAttributeList ::= SEQUENCE (SIZE(1..8)) OF LaneDataAttribute
+
+LaneList ::= SEQUENCE (SIZE(1..255)) OF GenericLane
+
+LaneSharing ::= BIT STRING {
+   overlappingLaneDescriptionProvided  (0),
+   multipleLanesTreatedAsOneLane       (1),
+   otherNonMotorizedTrafficTypes       (2),
+   individualMotorizedVehicleTraffic   (3),
+   busVehicleTraffic                   (4),  
+   taxiVehicleTraffic                  (5),
+   pedestriansTraffic                  (6),
+   cyclistVehicleTraffic               (7),
+   trackedVehicleTraffic               (8),
+   pedestrianTraffic                   (9)
+} (SIZE (10))
+
+LaneTypeAttributes ::= CHOICE {
+  vehicle        LaneAttributes-Vehicle,
+  crosswalk      LaneAttributes-Crosswalk,
+  bikeLane       LaneAttributes-Bike,
+  sidewalk       LaneAttributes-Sidewalk,
+  median         LaneAttributes-Barrier,
+  striping       LaneAttributes-Striping,
+  trackedVehicle LaneAttributes-TrackedVehicle,
+  parking        LaneAttributes-Parking,
+  ...
+}
+
+ManeuverAssistList ::= SEQUENCE (SIZE(1..16)) OF ConnectionManeuverAssist
+
+MovementEvent ::= SEQUENCE {
+  eventState   MovementPhaseState,
+  timing       TimeChangeDetails OPTIONAL,
+  speeds       AdvisorySpeedList OPTIONAL,
+  regional     SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-MovementEvent}} OPTIONAL,
+  ...  
+}
+
+MovementEventList ::= SEQUENCE (SIZE(1..16)) OF MovementEvent
+
+MovementList ::= SEQUENCE (SIZE(1..255)) OF MovementState
+
+MovementState ::= SEQUENCE {
+  movementName       DescriptiveName OPTIONAL,
+  signalGroup        SignalGroupID,    
+  state-time-speed   MovementEventList,   
+  maneuverAssistList ManeuverAssistList OPTIONAL,
+  regional           SEQUENCE (SIZE(1..4)) OF 
+                     RegionalExtension {{Reg-MovementState}} OPTIONAL,
+  ...  
+}
+
+NodeAttributeSetXY ::= SEQUENCE {
+  localNode    NodeAttributeXYList OPTIONAL,
+  disabled     SegmentAttributeXYList OPTIONAL,
+  enabled      SegmentAttributeXYList OPTIONAL,
+  data         LaneDataAttributeList OPTIONAL,
+  dWidth       Offset-B10 OPTIONAL,
+  dElevation   Offset-B10 OPTIONAL,
+  regional     SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-NodeAttributeSetXY}} OPTIONAL,
+  ...
+}
+
+NodeAttributeXY ::= ENUMERATED {
+  reserved,  
+  stopLine,
+  roundedCapStyleA,
+  roundedCapStyleB,
+  mergePoint,
+  divergePoint,
+  downstreamStopLine,
+  downstreamStartNode,
+  closedToTraffic,
+  safeIsland,
+  curbPresentAtStepOff,
+  hydrantPresent,
+  ...
+}
+
+NodeAttributeXYList ::= SEQUENCE (SIZE(1..8)) OF NodeAttributeXY
+
+Node-LLmD-64b ::= SEQUENCE {
+  lon  Longitude,
+  lat  Latitude
+}
+
+Node-XY-20b ::= SEQUENCE {
+  x  Offset-B10,
+  y  Offset-B10
+}
+
+Node-XY-22b ::= SEQUENCE {
+  x  Offset-B11,
+  y  Offset-B11
+}
+
+Node-XY-24b ::= SEQUENCE {
+  x  Offset-B12,
+  y  Offset-B12
+}
+
+Node-XY-26b ::= SEQUENCE {
+  x  Offset-B13,
+  y  Offset-B13
+}
+
+Node-XY-28b ::= SEQUENCE {
+  x  Offset-B14,
+  y  Offset-B14
+}
+
+Node-XY-32b ::= SEQUENCE {
+  x  Offset-B16,
+  y  Offset-B16
+}
+
+NodeListXY ::= CHOICE {
+  nodes     NodeSetXY,
+  computed  ComputedLane,
+  ...
+}
+
+NodeOffsetPointXY ::= CHOICE {
+  node-XY1         Node-XY-20b,
+  node-XY2         Node-XY-22b,
+  node-XY3         Node-XY-24b,
+  node-XY4         Node-XY-26b,
+  node-XY5         Node-XY-28b,
+  node-XY6         Node-XY-32b,
+  node-LatLon      Node-LLmD-64b,
+  regional         RegionalExtension {{Reg-NodeOffsetPointXY}}
+}
+
+NodeXY ::= SEQUENCE {
+  delta       NodeOffsetPointXY,
+  attributes  NodeAttributeSetXY OPTIONAL,
+  ... 
+}
+
+NodeSetXY ::= SEQUENCE (SIZE(2..63)) OF NodeXY
+
+OverlayLaneList ::= SEQUENCE (SIZE(1..5)) OF LaneID
+
+PositionalAccuracy ::= SEQUENCE {
+   semiMajor     SemiMajorAxisAccuracy,
+   semiMinor     SemiMinorAxisAccuracy,
+   orientation   SemiMajorAxisOrientation
+}
+
+PositionConfidenceSet ::= SEQUENCE {
+   pos        PositionConfidence, -- for both horizontal directions
+   elevation  ElevationConfidence 
+   }
+
+
+Position3D ::= SEQUENCE {
+  lat        Latitude,
+  long       Longitude,
+  elevation  Elevation  OPTIONAL,
+  regional   SEQUENCE (SIZE(1..4)) OF 
+             RegionalExtension {{Reg-Position3D}} OPTIONAL,
+  ...
+}
+
+PreemptPriorityList ::= SEQUENCE (SIZE(1..32)) OF SignalControlZone
+
+RegulatorySpeedLimit ::= SEQUENCE {
+  type        SpeedLimitType, 
+  speed       Velocity
+}
+
+RequestorDescription ::= SEQUENCE {
+  id                VehicleID, 
+  type              RequestorType OPTIONAL,
+  position          RequestorPositionVector OPTIONAL,
+  name              DescriptiveName OPTIONAL,
+  routeName         DescriptiveName OPTIONAL,
+  transitStatus     TransitVehicleStatus OPTIONAL,
+  transitOccupancy  TransitVehicleOccupancy OPTIONAL,
+  transitSchedule   DeltaTime OPTIONAL, 
+  regional          SEQUENCE (SIZE(1..4)) OF 
+                    RegionalExtension {{Reg-RequestorDescription}} OPTIONAL,
+  ...
+}
+
+RequestorPositionVector ::= SEQUENCE {
+  position           Position3D,
+  heading            Angle OPTIONAL, 
+  speed              TransmissionAndSpeed OPTIONAL,
+  ...  
+}
+
+RequestorType ::= SEQUENCE {
+  role         BasicVehicleRole,
+  subrole      RequestSubRole OPTIONAL,
+  request      RequestImportanceLevel OPTIONAL,
+  iso3883      Iso3833VehicleType OPTIONAL,
+  hpmsType     VehicleType OPTIONAL,
+  regional     RegionalExtension {{Reg-RequestorType}} OPTIONAL,
+  ...
+}
+
+RestrictionClassAssignment ::= SEQUENCE {
+  id       RestrictionClassID,
+  users    RestrictionUserTypeList 
+}
+
+RestrictionClassList ::= SEQUENCE (SIZE(1..254)) OF RestrictionClassAssignment
+
+RestrictionUserType ::= CHOICE {
+  basicType   RestrictionAppliesTo,
+  regional    SEQUENCE (SIZE(1..4)) OF 
+              RegionalExtension {{Reg-RestrictionUserType}}, 
+  ...
+}
+
+RestrictionUserTypeList ::= SEQUENCE (SIZE(1..16)) OF  RestrictionUserType
+
+RoadLaneSetList ::= SEQUENCE (SIZE(1..255)) OF GenericLane
+
+RoadSegmentReferenceID ::= SEQUENCE {
+  region  RoadRegulatorID OPTIONAL,
+  id      RoadSegmentID
+}
+
+RoadSegment ::= SEQUENCE {
+  name        DescriptiveName OPTIONAL,
+  id          RoadSegmentReferenceID,
+  revision    MsgCount,    
+  refPoint    Position3D,
+  laneWidth   LaneWidth OPTIONAL,   
+  speedLimits SpeedLimitList OPTIONAL, 
+  roadLaneSet RoadLaneSetList,   
+  regional    SEQUENCE (SIZE(1..4)) OF 
+              RegionalExtension {{Reg-RoadSegment}} OPTIONAL,
+  ...
+}
+
+RoadSegmentList ::= SEQUENCE (SIZE(1..32)) OF RoadSegment
+
+RTCMheader ::= SEQUENCE {
+   status     GNSSstatus,
+   offsetSet  AntennaOffsetSet
+   }
+
+RTCMmessageList ::= SEQUENCE (SIZE(1..5)) OF RTCMmessage
+
+SegmentAttributeXYList ::= SEQUENCE (SIZE(1..8)) OF SegmentAttributeXY
+
+SignalControlZone ::=  SEQUENCE {
+  zone  RegionalExtension {{Reg-SignalControlZone}},
+  ...
+}
+
+SignalRequesterInfo ::= SEQUENCE {
+  id             VehicleID,
+  request        RequestID,
+  sequenceNumber MsgCount,
+  role           BasicVehicleRole OPTIONAL,
+  typeData       RequestorType OPTIONAL, 
+  ...
+}
+
+SignalRequest ::= SEQUENCE {
+  id            IntersectionReferenceID,  
+  requestID     RequestID, 
+  requestType   PriorityRequestType,   
+  inBoundLane   IntersectionAccessPoint,       
+  outBoundLane  IntersectionAccessPoint OPTIONAL,       
+  regional      SEQUENCE (SIZE(1..4)) OF 
+                RegionalExtension {{Reg-SignalRequest}} OPTIONAL,
+  ...
+}
+
+SignalRequestList ::= SEQUENCE (SIZE(1..32)) OF SignalRequestPackage
+
+SignalRequestPackage ::= SEQUENCE {
+  request        SignalRequest,
+  minute         MinuteOfTheYear OPTIONAL,
+  second         DSecond OPTIONAL,
+  duration       DSecond OPTIONAL,
+  regional       SEQUENCE (SIZE(1..4)) OF 
+                 RegionalExtension {{Reg-SignalRequestPackage}} OPTIONAL,
+  ...  
+}
+
+SignalStatus ::= SEQUENCE {
+  sequenceNumber MsgCount,
+  id             IntersectionReferenceID,
+  sigStatus      SignalStatusPackageList,
+  regional       SEQUENCE (SIZE(1..4)) OF 
+                 RegionalExtension {{Reg-SignalStatus}} OPTIONAL,
+  ...  
+}
+
+SignalStatusList ::= SEQUENCE (SIZE(1..32)) OF SignalStatus
+
+SignalStatusPackageList ::= SEQUENCE (SIZE(1..32)) OF SignalStatusPackage
+
+SignalStatusPackage ::= SEQUENCE {
+  requester    SignalRequesterInfo OPTIONAL,
+  inboundOn    IntersectionAccessPoint,
+  outboundOn   IntersectionAccessPoint OPTIONAL,
+
+  minute       MinuteOfTheYear OPTIONAL,
+  second       DSecond OPTIONAL,
+  duration     DSecond OPTIONAL,
+  status       PrioritizationResponseStatus,
+  regional     SEQUENCE (SIZE(1..4)) OF 
+               RegionalExtension {{Reg-SignalStatusPackage}} OPTIONAL,
+  ...  
+}
+
+SpeedandHeadingandThrottleConfidence ::= SEQUENCE {
+   heading   HeadingConfidence,    
+   speed     SpeedConfidence,      
+   throttle  ThrottleConfidence    
+   }
+
+   
+SpeedLimitList ::= SEQUENCE (SIZE(1..9)) OF RegulatorySpeedLimit
+
+SpeedLimitType ::= ENUMERATED {
+   unknown,
+   maxSpeedInSchoolZone,
+   maxSpeedInSchoolZoneWhenChildrenArePresent,
+   maxSpeedInConstructionZone,
+   vehicleMinSpeed,
+   vehicleMaxSpeed,
+   vehicleNightMaxSpeed,
+   truckMinSpeed,
+   truckMaxSpeed,
+   truckNightMaxSpeed,
+   vehiclesWithTrailersMinSpeed,
+   vehiclesWithTrailersMaxSpeed,
+   vehiclesWithTrailersNightMaxSpeed,
+   ...
+}
+
+TimeChangeDetails ::= SEQUENCE {
+  startTime   TimeMark           OPTIONAL,
+  minEndTime  TimeMark,
+  maxEndTime  TimeMark           OPTIONAL,
+  likelyTime  TimeMark           OPTIONAL,
+  confidence  TimeIntervalConfidence OPTIONAL,
+  nextTime    TimeMark           OPTIONAL
+}
+
+TimeMark ::= INTEGER (0..36001) 
+
+TransmissionAndSpeed ::= SEQUENCE {
+  transmisson   TransmissionState,
+  speed         Velocity
+}
+
+VehicleID ::= CHOICE {
+  entityID     TemporaryID,
+  stationID    StationID
+}
+
+   
+-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+-- data elements
+-- -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+
+AdvisorySpeedType ::= ENUMERATED {
+  none       (0),
+  greenwave  (1),
+  ecoDrive   (2),
+  transit    (3),
+  ...  
+}
+
+AllowedManeuvers ::= BIT STRING {
+  maneuverStraightAllowed      (0), 
+  maneuverLeftAllowed          (1),  
+  maneuverRightAllowed         (2), 
+  maneuverUTurnAllowed         (3), 
+  maneuverLeftTurnOnRedAllowed (4), 
+  maneuverRightTurnOnRedAllowed (5), 
+  maneuverLaneChangeAllowed    (6), 
+  maneuverNoStoppingAllowed    (7), 
+  yieldAllwaysRequired         (8), 
+  goWithHalt                   (9), 
+  caution                      (10), 
+  reserved1                    (11)
+} (SIZE(12))
+
+Angle ::= INTEGER (0..28800) 
+
+ApproachID ::= INTEGER (0..15)
+   
+BasicVehicleRole ::= ENUMERATED {
+  basicVehicle     (0),
+  publicTransport  (1),
+  specialTransport (2),
+  dangerousGoods   (3),
+  roadWork         (4),
+  roadRescue       (5),
+  emergency        (6),
+  safetyCar        (7),
+  none-unknown     (8),
+  truck            (9),
+  motorcycle      (10),
+  roadSideSource  (11),
+  police          (12),
+  fire            (13),
+  ambulance       (14),
+  dot             (15),
+  transit         (16),
+  slowMoving      (17),
+  stopNgo         (18),
+  cyclist         (19),
+  pedestrian      (20),
+  nonMotorized    (21),
+  military        (22),
+  ...   
+}  
+
+DDay ::= INTEGER (0..31)
+
+DeltaAngle ::= INTEGER (-150..150) 
+
+DeltaTime ::= INTEGER (-122 .. 121) 
+
+DescriptiveName ::= IA5String (SIZE(1..63))
+
+DHour ::= INTEGER (0..31)
+
+DMinute ::= INTEGER (0..60)
+
+DMonth ::= INTEGER (0..12)
+
+DOffset ::= INTEGER (-840..840)
+
+DrivenLineOffsetLg ::= INTEGER (-32767..32767) 
+
+DrivenLineOffsetSm ::= INTEGER (-2047..2047) 
+
+DSecond ::= INTEGER (0..65535)
+
+DSRCmsgID ::= INTEGER (0..32767)
+  mapData                           DSRCmsgID ::=   18
+  rtcmCorrections                   DSRCmsgID ::=   28
+  signalPhaseAndTimingMessage       DSRCmsgID ::=   19
+  signalRequestMessage              DSRCmsgID ::=   29
+  signalStatusMessage               DSRCmsgID ::=   30
+
+DYear ::= INTEGER (0..4095)
+
+Elevation ::= INTEGER (-4096..61439)
+
+ElevationConfidence ::= ENUMERATED {
+   unavailable (0),
+   elev-500-00 (1),
+   elev-200-00 (2),
+   elev-100-00 (3),
+   elev-050-00 (4),
+   elev-020-00 (5),
+   elev-010-00 (6),
+   elev-005-00 (7),
+   elev-002-00 (8),
+   elev-001-00 (9),
+   elev-000-50 (10),
+   elev-000-20 (11),
+   elev-000-10 (12),
+   elev-000-05 (13),
+   elev-000-02 (14),
+   elev-000-01 (15)
+   }
+
+
+FuelType ::= INTEGER (0..15) 
+   unknownFuel FuelType  ::= 0
+   gasoline FuelType     ::= 1 
+   ethanol FuelType      ::= 2
+   diesel FuelType       ::= 3
+   electric FuelType     ::= 4 
+   hybrid FuelType       ::= 5
+   hydrogen FuelType     ::= 6 
+   natGasLiquid FuelType ::= 7
+   natGasComp FuelType   ::= 8
+   propane FuelType      ::= 9
+   
+GNSSstatus ::= BIT STRING {
+   unavailable               (0),
+   isHealthy                 (1),
+   isMonitored               (2),
+   baseStationType           (3),
+   aPDOPofUnder5             (4),
+   inViewOfUnder5            (5),
+   localCorrectionsPresent   (6),
+   networkCorrectionsPresent (7)
+   } (SIZE(8))
+
+HeadingConfidence ::= ENUMERATED {
+   unavailable   (0),
+   prec10deg     (1),
+   prec05deg     (2),
+   prec01deg     (3),
+   prec0-1deg    (4),
+   prec0-05deg   (5),
+   prec0-01deg   (6),
+   prec0-0125deg (7)
+   } 
+   
+Heading ::= INTEGER (0..28800)
+
+IntersectionID ::= INTEGER (0..65535)
+
+IntersectionStatusObject ::= BIT STRING {
+  manualControlIsEnabled                (0),
+  stopTimeIsActivated                   (1),
+  failureFlash                          (2), 
+  preemptIsActive                       (3),
+  signalPriorityIsActive                (4),   
+  fixedTimeOperation                    (5),
+  trafficDependentOperation             (6),
+  standbyOperation                      (7),
+  failureMode                           (8),
+  off                                   (9),
+  recentMAPmessageUpdate                (10),
+  recentChangeInMAPassignedLanesIDsUsed (11),
+  noValidMAPisAvailableAtThisTime       (12),
+  noValidSPATisAvailableAtThisTime      (13)
+} (SIZE(16))
+
+LaneAttributes-Barrier ::= BIT STRING {
+  median-RevocableLane     (0),
+  median                   (1),
+  whiteLineHashing         (2),
+  stripedLines             (3),
+  doubleStripedLines       (4),
+  trafficCones             (5),
+  constructionBarrier      (6),
+  trafficChannels          (7),
+  lowCurbs                 (8),
+  highCurbs                (9)
+} (SIZE (16))
+
+LaneAttributes-Bike ::= BIT STRING {
+  bikeRevocableLane       (0),
+  pedestrianUseAllowed    (1),
+  isBikeFlyOverLane       (2),
+  fixedCycleTime          (3),
+  biDirectionalCycleTimes (4),
+  isolatedByBarrier       (5),
+  unsignalizedSegmentsPresent  (6)
+} (SIZE (16))
+
+LaneAttributes-Crosswalk ::= BIT STRING { 
+  crosswalkRevocableLane  (0),
+  bicyleUseAllowed        (1),
+  isXwalkFlyOverLane      (2),
+  fixedCycleTime          (3),
+  biDirectionalCycleTimes (4),
+  hasPushToWalkButton     (5),
+  audioSupport            (6),
+  rfSignalRequestPresent  (7),
+  unsignalizedSegmentsPresent  (8)
+} (SIZE (16))
+
+LaneAttributes-Parking ::= BIT STRING { 
+  parkingRevocableLane         (0),
+  parallelParkingInUse         (1),
+  headInParkingInUse           (2),
+  doNotParkZone                (3),
+  parkingForBusUse             (4),
+  parkingForTaxiUse            (5),
+  noPublicParkingUse           (6)
+} (SIZE (16))
+
+LaneAttributes-Sidewalk ::= BIT STRING { 
+  sidewalk-RevocableLane  (0),
+  bicyleUseAllowed        (1),
+  isSidewalkFlyOverLane   (2),
+  walkBikes               (3)
+} (SIZE (16))
+
+LaneAttributes-Striping ::= BIT STRING { 
+  stripeToConnectingLanesRevocableLane      (0),
+  stripeDrawOnLeft                          (1),
+  stripeDrawOnRight                         (2),
+  stripeToConnectingLanesLeft               (3),
+  stripeToConnectingLanesRight              (4),
+  stripeToConnectingLanesAhead              (5)
+} (SIZE (16))
+
+LaneAttributes-TrackedVehicle ::= BIT STRING { 
+  spec-RevocableLane         (0),
+  spec-commuterRailRoadTrack (1), 
+  spec-lightRailRoadTrack    (2),
+  spec-heavyRailRoadTrack    (3),
+  spec-otherRailType         (4)
+} (SIZE (16))
+
+
+LaneAttributes-Vehicle ::= BIT STRING {  
+  isVehicleRevocableLane       (0),
+  isVehicleFlyOverLane         (1),
+  hovLaneUseOnly               (2),
+  restrictedToBusUse           (3),
+  restrictedToTaxiUse          (4),
+  restrictedFromPublicUse      (5),
+  hasIRbeaconCoverage          (6),
+  permissionOnRequest          (7)
+} (SIZE (8,...))
+
+LaneConnectionID ::= INTEGER (0..255)
+
+LaneDirection ::= BIT STRING {
+  ingressPath     (0), 
+  egressPath      (1)
+} (SIZE (2))
+
+LaneID ::= INTEGER (0..255)
+
+LayerID ::= INTEGER (0..100)
+
+LayerType ::= ENUMERATED {
+  none, 
+  mixedContent,
+  generalMapData, 
+  intersectionData, 
+  curveData, 
+  roadwaySectionData, 
+  parkingAreaData, 
+  sharedLaneData,
+  ... 
+}
+   
+LaneWidth ::= INTEGER (0..32767)
+
+MergeDivergeNodeAngle ::= INTEGER (-180..180) 
+
+MinuteOfTheYear ::= INTEGER (0..527040) 
+
+MovementPhaseState ::= ENUMERATED {
+  unavailable (0), 
+  dark (1),   
+  stop-Then-Proceed (2), 
+  stop-And-Remain (3),
+  pre-Movement (4), 
+  permissive-Movement-Allowed (5), 
+  protected-Movement-Allowed (6), 
+  permissive-clearance (7), 
+  protected-clearance (8),  
+  caution-Conflicting-Traffic (9)
+}
+
+MsgCount ::= INTEGER (0..127)
+
+Offset-B09 ::= INTEGER (-256..255)
+
+Offset-B10 ::= INTEGER (-512..511)
+
+Offset-B11 ::= INTEGER (-1024..1023)
+
+Offset-B12 ::= INTEGER (-2048..2047)
+
+Offset-B13 ::= INTEGER (-4096..4095)
+
+Offset-B14 ::= INTEGER (-8192..8191)
+
+Offset-B16 ::= INTEGER (-32768..32767)
+
+PedestrianBicycleDetect ::= BOOLEAN 
+
+PositionConfidence ::= ENUMERATED {
+   unavailable (0),
+   a500m   (1),
+   a200m   (2),
+   a100m   (3),
+   a50m    (4),
+   a20m    (5),
+   a10m    (6),
+   a5m     (7),
+   a2m     (8),
+   a1m     (9),
+   a50cm  (10),
+   a20cm  (11),
+   a10cm  (12),
+   a5cm   (13),
+   a2cm   (14),
+   a1cm   (15)
+   } 
+
+PrioritizationResponseStatus ::= ENUMERATED {
+  unknown           (0),
+  requested         (1),
+  processing        (2),
+  watchOtherTraffic (3),
+  granted           (4),
+  rejected          (5),
+  maxPresence       (6),
+  reserviceLocked   (7),
+  ...
+}
+
+PriorityRequestType ::= ENUMERATED {
+  priorityRequestTypeReserved (0),  
+  priorityRequest             (1),   
+  priorityRequestUpdate       (2), 
+  priorityCancellation        (3),  
+  ...  
+}
+
+RegionId ::= INTEGER (0..255)
+  noRegion     RegionId ::= 0
+  addGrpA      RegionId ::= 1
+  addGrpB      RegionId ::= 2
+  addGrpC      RegionId ::= 3
+
+RequestID ::= INTEGER (0..255)
+
+RequestImportanceLevel ::= ENUMERATED {
+  requestImportanceLevelUnKnown  (0),
+  requestImportanceLevel1        (1),
+  requestImportanceLevel2        (2),
+  requestImportanceLevel3        (3),
+  requestImportanceLevel4        (4),
+  requestImportanceLevel5        (5),
+  requestImportanceLevel6        (6),
+  requestImportanceLevel7        (7),
+  requestImportanceLevel8        (8),
+  requestImportanceLevel9        (9),
+  requestImportanceLevel10      (10),
+  requestImportanceLevel11      (11),
+  requestImportanceLevel12      (12),
+  requestImportanceLevel13      (13),
+  requestImportanceLevel14      (14),
+  requestImportanceReserved     (15)
+}
+
+RequestSubRole ::= ENUMERATED {
+  requestSubRoleUnKnown    (0),
+  requestSubRole1          (1),
+  requestSubRole2          (2),
+  requestSubRole3          (3),
+  requestSubRole4          (4),
+  requestSubRole5          (5),
+  requestSubRole6          (6),
+  requestSubRole7          (7),
+  requestSubRole8          (8),
+  requestSubRole9          (9),
+  requestSubRole10        (10),
+  requestSubRole11        (11),
+  requestSubRole12        (12),
+  requestSubRole13        (13),
+  requestSubRole14        (14),
+  requestSubRoleReserved  (15)
+}
+
+RestrictionAppliesTo ::= ENUMERATED {
+  none,
+  equippedTransit,
+  equippedTaxis,
+  equippedOther,
+  emissionCompliant,
+  equippedBicycle,
+  weightCompliant,
+  heightCompliant,
+  pedestrians,
+  slowMovingPersons,
+  wheelchairUsers,
+  visualDisabilities,
+  audioDisabilities,
+  otherUnknownDisabilities,
+  ...
+}
+
+RestrictionClassID ::= INTEGER (0..255)
+
+RoadRegulatorID ::= INTEGER (0..65535)
+
+RoadSegmentID ::= INTEGER (0..65535)
+
+RoadwayCrownAngle ::= INTEGER (-128..127) 
+
+RTCMmessage ::= OCTET STRING (SIZE(1..1023))
+   
+RTCM-Revision ::= ENUMERATED {
+  unknown (0),
+  rtcmRev2 (1), -- Std 10402.x et al
+  rtcmRev3 (2), -- Std 10403.x et al
+  reserved (3),
+  ...
+}
+   
+Scale-B12 ::= INTEGER (-2048..2047)
+
+SignalGroupID ::= INTEGER (0..255) 
+
+SegmentAttributeXY ::= ENUMERATED {
+  reserved                  ,  
+  doNotBlock                ,
+  whiteLine                 ,
+  mergingLaneLeft           ,
+  mergingLaneRight          ,
+  curbOnLeft                ,
+  curbOnRight               ,
+  loadingzoneOnLeft         ,
+  loadingzoneOnRight        ,
+  turnOutPointOnLeft        ,
+  turnOutPointOnRight       ,
+  adjacentParkingOnLeft     ,
+  adjacentParkingOnRight    ,
+  adjacentBikeLaneOnLeft    ,
+  adjacentBikeLaneOnRight   ,
+  sharedBikeLane            ,
+  bikeBoxInFront            ,
+  transitStopOnLeft         ,
+  transitStopOnRight        ,
+  transitStopInLane         ,
+  sharedWithTrackedVehicle  ,
+  safeIsland                ,
+  lowCurbsPresent           ,
+  rumbleStripPresent        ,
+  audibleSignalingPresent   ,
+  adaptiveTimingPresent     ,
+  rfSignalRequestPresent    ,
+  partialCurbIntrusion      ,
+  taperToLeft               ,
+  taperToRight              ,
+  taperToCenterLine         ,
+  parallelParking           ,
+  headInParking             ,
+  freeParking               ,
+  timeRestrictionsOnParking ,
+  costToPark                ,
+  midBlockCurbPresent       ,
+  unEvenPavementPresent     ,
+  ...
+}
+
+SemiMajorAxisAccuracy ::= INTEGER (0..255)
+
+SemiMajorAxisOrientation ::= INTEGER (0..65535)
+
+SemiMinorAxisAccuracy ::= INTEGER (0..255)
+
+SpeedAdvice ::= INTEGER (0..500) 
+
+SpeedConfidence ::= ENUMERATED {
+   unavailable (0), -- Not Equipped or unavailable
+   prec100ms   (1), -- 100  meters / sec
+   prec10ms    (2), -- 10   meters / sec
+   prec5ms     (3), -- 5    meters / sec
+   prec1ms     (4), -- 1    meters / sec
+   prec0-1ms   (5), -- 0.1  meters / sec
+   prec0-05ms  (6), -- 0.05 meters / sec
+   prec0-01ms  (7)  -- 0.01 meters / sec
+   }
+
+TemporaryID ::= OCTET STRING (SIZE(4))
+
+ThrottleConfidence ::= ENUMERATED {
+   unavailable     (0),
+   prec10percent   (1),
+   prec1percent    (2),
+   prec0-5percent  (3)
+   }
+
+TimeConfidence ::= ENUMERATED {
+   unavailable              (0), 
+   time-100-000             (1),
+   time-050-000             (2),
+   time-020-000             (3),
+   time-010-000             (4),
+   time-002-000             (5),
+   time-001-000             (6),
+   time-000-500             (7),
+   time-000-200             (8),
+   time-000-100             (9),
+   time-000-050            (10),
+   time-000-020            (11),
+   time-000-010            (12),
+   time-000-005            (13),
+   time-000-002            (14),
+   time-000-001            (15),
+   time-000-000-5          (16),
+   time-000-000-2          (17),
+   time-000-000-1          (18),
+   time-000-000-05         (19),
+   time-000-000-02         (20),
+   time-000-000-01         (21),
+   time-000-000-005        (22),
+   time-000-000-002        (23),
+   time-000-000-001        (24),
+   time-000-000-000-5      (25),
+   time-000-000-000-2      (26),
+   time-000-000-000-1      (27),
+   time-000-000-000-05     (28),
+   time-000-000-000-02     (29),
+   time-000-000-000-01     (30),
+   time-000-000-000-005    (31),
+   time-000-000-000-002    (32),
+   time-000-000-000-001    (33),
+   time-000-000-000-000-5  (34),
+   time-000-000-000-000-2  (35),
+   time-000-000-000-000-1  (36),
+   time-000-000-000-000-05 (37),
+   time-000-000-000-000-02 (38),
+   time-000-000-000-000-01 (39) 
+}
+
+TimeIntervalConfidence ::= INTEGER (0..15)   
+
+TransitVehicleOccupancy ::= ENUMERATED {
+  occupancyUnknown    (0),  
+  occupancyEmpty      (1),  
+  occupancyVeryLow    (2),  
+  occupancyLow        (3),  
+  occupancyMed        (4),  
+  occupancyHigh       (5),  
+  occupancyNearlyFull (6),  
+  occupancyFull       (7)
+}
+
+TransitVehicleStatus ::= BIT STRING {
+  loading     (0),
+  anADAuse    (1),
+  aBikeLoad   (2),
+  doorOpen    (3),
+  charging    (4),
+  atStopLine  (5)
+} (SIZE(8))
+
+TransmissionState ::= ENUMERATED {
+  neutral      (0),
+  park         (1),
+  forwardGears (2),
+  reverseGears (3),
+  reserved1    (4),      
+  reserved2    (5),      
+  reserved3    (6),      
+  unavailable  (7)
+}
+
+VehicleHeight ::= INTEGER (0..127)
+
+VehicleType ::= ENUMERATED {
+  none                 (0),
+  unknown              (1),
+  special              (2),
+  moto                 (3),
+  car                  (4),
+  carOther             (5),
+  bus                  (6),
+  axleCnt2             (7),
+  axleCnt3             (8),
+  axleCnt4             (9),
+  axleCnt4Trailer      (10),
+  axleCnt5Trailer      (11),
+  axleCnt6Trailer      (12),
+  axleCnt5MultiTrailer (13),
+  axleCnt6MultiTrailer (14),
+  axleCnt7MultiTrailer (15),
+  ...  
+} 
+
+Velocity ::= INTEGER (0..8191)
+
+WaitOnStopline ::= BOOLEAN 
+
+ZoneLength ::= INTEGER (0..10000)
+
+END
+
+--<OSS.PDU>-- 
+
+-- ISO 14816:2005 Amd.1:2015
+
+
+AVIAEINumberingAndDataStructures {iso(1) standard(0) iso14816(14816) asnm1(1) version1(1)} 
+DEFINITIONS AUTOMATIC TAGS::= BEGIN
+ 
+CS1::= SEQUENCE {
+	countryCode			CountryCode,
+	issuerIdentifier	IssuerIdentifier,
+	serviceNumber		ServiceNumber
+	}
+
+CS2::= SEQUENCE {
+	manufacturerIdentifier	ManufacturerIdentifier,
+	serviceNumber			ServiceNumber
+	}
+
+CS3::= SEQUENCE {
+	startTime		StartTime, 
+	stopTime		StopTime,
+	geographLimit	GeoGraphicalLimit,
+	serviceAppLimit ServiceApplicationLimit
+	}
+
+
+/*
+CS4::= SEQUENCE {
+	countryCode 		CountryCode,
+	alphabetIndicator 	AlphabetIndicator, 
+	licPlateNumber 		LicPlateNumber
+	}
+	*/
+	
+CS4::= SEQUENCE {
+	countryCode 		CountryCode,
+	alphabetIndicator 	AlphabetIndicator, 
+	licPlateNumber 		LicPlateNumber
+	} (WITH COMPONENTS {..., licPlateNumber (SIZE(14))})
+
+CS5::= SEQUENCE{
+	vin	VisibleString, -- 17 characters VIN
+	fill	BIT STRING (SIZE(9)) -- set to '000000000'
+	}
+
+CS7::= FreightContainerData
+
+FreightContainerData::= SEQUENCE { -- octet aligned by means of 3 fill bits at the end
+	ownerCode			BIT STRING(SIZE(19)), 	-- 19bits
+	serialNumber		INTEGER(0 .. 1000000),	-- 20bits
+	checkDigit			INTEGER(0 .. 10),	-- 4bits
+	length				INTEGER(1 .. 2000),	-- 11bits
+	height				INTEGER(1 .. 500),	-- 9bits
+	width				INTEGER(200 .. 300),	-- 7bits
+	containerTypeCode	INTEGER(0 .. 127),	-- 7bits
+	maximumGrossMass	INTEGER(19 .. 500),	-- 9bits
+	tareMass			INTEGER(0 .. 99),	-- 7bits
+	fill				BIT STRING (SIZE(3)) -- set to '000'
+	} -- 12 octets
+
+CS8::= SEQUENCE { -- octet aligned by means of 6 fill bits at the beginning
+	fill		BIT STRING (SIZE(6)), -- set to '000000'
+	countryCode	CountryCode, -- 10 bits
+	taxCode		TaxCode
+	}
+
+CountryCode::= BIT STRING(SIZE(10))
+
+IssuerIdentifier::= INTEGER(0 .. 16383)
+
+ManufacturerIdentifier::= INTEGER(0 .. 65535)
+
+LicPlateNumber::= OCTET STRING 
+
+--ServiceNumber::= BIT STRING(SIZE(32))
+ServiceNumber::= BIT STRING (SIZE(32))(CONTAINING INTEGER (0..4294967295))
+
+TaxCode::= OCTET STRING
+
+AlphabetIndicator::= INTEGER {
+	latinAlphabetNo1		(0), -- encoded as 00 00 00達
+	latinAlphabetNo2		(1), -- encoded as 00 00 01達 etc
+	latinAlphabetNo3		(2),
+	latinAlphabetNo4		(3),
+	latinCyrillicAlphabet	(4),
+	latinArabicAlphabet		(5),
+	latinGreekAlphabet		(6),
+	latinHebrewAlphabet		(7),
+	latinAlphabetNo5		(8),
+	latinAlphabetNo6		(9),
+	twoOctetBMP				(10),
+	fourOctetCanonical		(11)
+	} (0..63) -- 6 bits, latinAlphabetNo1 recommended 
+
+AviEriDateTime ::= OCTET STRING (SIZE(10))  	-- YYMMDDhhmm
+	
+StartTime::= AviEriDateTime
+
+StopTime::= AviEriDateTime
+
+GeoGraphicalLimit::= BIT STRING {
+	globalRestriction			(0),
+	regionalRestriction			(1),
+	nationalRestriction			(2),
+	district					(3),
+	issuerCoverageRestriction	(4),
+	reservedForCEN1				(5),
+	reservedForCEN2				(6),
+	issuerSpecificRestriction	(7) 
+	} (SIZE(8))
+	
+ServiceApplicationLimit::= BIT STRING {
+	notForPostpayment			(0),
+	notForPrepayment			(1),
+	notForVehicleaccess			(2),
+	notForFleetcontrol			(3),
+	issuerSpecificRestriction1	(4),
+	issuerSpecificRestriction2	(5),
+	issuerSpecificRestriction3	(6),
+	issuerSpecificRestriction4	(7)
+	} (SIZE(8))
+	
+version INTEGER(0..255)::= 1 -- version of this ASN.1 module
+	
+END
+/*
+   The ASN.1 specification has been checked for conformance to the ASN.1
+   standards by OSS ASN.1 Studio
+*/
+
+IVI {iso (1) standard (0) ivi (19321) version2 (2)}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+IMPORTS
+
+ActionID, Altitude, DangerousGoodsBasic , DeltaLatitude, DeltaLongitude, DeltaReferencePosition, Heading, HeadingValue, Latitude, LanePosition, Longitude, ReferencePosition, RoadType, SpecialTransportType, Speed, SpeedValue, StationType, TimestampIts, VehicleRole
+FROM ITS-Container {  itu-t (0) identified-organization (4) etsi (0) itsDomain (5) wg1 (1) ts (102894) cdd (2) version (2) }
+
+AxleWeightLimits, DieselEmissionValues, ExhaustEmissionValues, EngineCharacteristics, EnvironmentalCharacteristics, PassengerCapacity , Provider, SoundLevel, VehicleDimensions,  VehicleWeightLimits 
+FROM EfcDsrcApplication {iso(1) standard(0) 14906 application(0) version6(6)}
+
+EuVehicleCategoryCode, Iso3833VehicleType
+FROM ElectronicRegistrationIdentificationVehicleDataModule {iso(1) standard(0) iso24534 (24534) vehicleData (1) version1 (1)}
+
+VarLengthNumber
+FROM CITSapplMgmtIDs {iso(1) standard(0) cits-applMgmt (17419) ids (1) version1 (1)} 
+
+RoadSegmentReferenceID, IntersectionReferenceID, LaneID 
+FROM DSRC {iso (1) standard (0) signalizedIntersection (19091) profilec(2) dsrc (2) version2 (2)}
+
+InternationalSign-applicablePeriod, InternationalSign-exemptedApplicablePeriod, InternationalSign-directionalFlowOfLane, InternationalSign-applicableVehicleDimensions, InternationalSign-speedLimits, InternationalSign-rateOfIncline, InternationalSign-distanceBetweenVehicles, InternationalSign-destinationInformation
+FROM GDD {iso (1) standard (0) gdd(14823) version1 (0)};
+
+-- Definition of IVI structure
+
+IviStructure::= SEQUENCE{
+	mandatory		IviManagementContainer,
+	optional		IviContainers OPTIONAL
+	}
+
+IviContainers ::= SEQUENCE (SIZE (1..8,...)) OF IviContainer
+
+--Definition of Containers
+
+IviContainer::= CHOICE {
+	glc		GeographicLocationContainer, --1
+	giv		GeneralIviContainer, --1
+	rcc		RoadConfigurationContainer, 
+	tc		TextContainer, -- 1
+	lac		LayoutContainer,
+	...,	-- original extension indicator of V1
+[[ -- Extension in V2
+	avc		AutomatedVehicleContainer,	
+	mlc		MapLocationContainer, 
+	rsc		RoadSurfaceContainer ]]
+	}
+
+IviManagementContainer::= SEQUENCE {
+	serviceProviderId			Provider, 
+	iviIdentificationNumber		IviIdentificationNumber,
+	timeStamp					TimestampIts OPTIONAL,
+	validFrom					TimestampIts OPTIONAL,
+	validTo						TimestampIts OPTIONAL,
+	connectedIviStructures		IviIdentificationNumbers OPTIONAL,
+	iviStatus					IviStatus,
+	...,    					-- original extension indicator of V1
+	connectedDenms				ConnectedDenms OPTIONAL -- Extension in V2
+	}
+	
+GeographicLocationContainer::= SEQUENCE {
+	referencePosition			ReferencePosition,
+	referencePositionTime 		TimestampIts OPTIONAL,
+	referencePositionHeading	Heading OPTIONAL, 
+	referencePositionSpeed		Speed OPTIONAL,
+	parts 						GlcParts, 
+	...
+	}
+GlcParts ::= SEQUENCE (SIZE (1..16,...)) OF GlcPart
+
+GlcPart::= SEQUENCE {
+	zoneId						Zid, 
+	laneNumber					LanePosition OPTIONAL,
+	zoneExtension				INTEGER (0..255) OPTIONAL,
+	zoneHeading					HeadingValue OPTIONAL,
+	zone						Zone OPTIONAL,
+	... 
+	}
+
+GeneralIviContainer::= SEQUENCE (SIZE (1..16,...)) OF GicPart  
+
+GicPart::= SEQUENCE {
+	detectionZoneIds		ZoneIds OPTIONAL, 
+	its-Rrid				VarLengthNumber OPTIONAL,
+	relevanceZoneIds		ZoneIds OPTIONAL, 
+	direction				Direction OPTIONAL,
+	driverAwarenessZoneIds	ZoneIds OPTIONAL, 
+	minimumAwarenessTime	INTEGER (0..255) OPTIONAL,
+	applicableLanes			LanePositions OPTIONAL,
+	iviType					IviType,
+	iviPurpose				IviPurpose OPTIONAL,
+	laneStatus				LaneStatus OPTIONAL,	
+	vehicleCharacteristics	VehicleCharacteristicsList OPTIONAL,
+	driverCharacteristics	DriverCharacteristics OPTIONAL,
+	layoutId				INTEGER(1..4,...) OPTIONAL,
+	preStoredlayoutId		INTEGER(1..64,...) OPTIONAL,
+	roadSignCodes			RoadSignCodes,
+	extraText				ConstraintTextLines1 OPTIONAL,
+	...
+	}
+
+RoadConfigurationContainer::= SEQUENCE (SIZE (1..16,...)) OF RccPart
+
+RccPart::= SEQUENCE{
+	relevanceZoneIds	ZoneIds,
+	roadType			RoadType, 
+	laneConfiguration	LaneConfiguration,
+	...
+	}
+
+RoadSurfaceContainer::= SEQUENCE (SIZE (1..16,...)) OF RscPart
+	 
+RscPart::= SEQUENCE{
+	detectionZoneIds					ZoneIds OPTIONAL,
+	relevanceZoneIds					ZoneIds,
+	direction							Direction OPTIONAL,
+	roadSurfaceStaticCharacteristics	RoadSurfaceStaticCharacteristics OPTIONAL,
+	roadSurfaceDynamicCharacteristics	RoadSurfaceDynamicCharacteristics OPTIONAL
+	} (WITH COMPONENTS {..., roadSurfaceStaticCharacteristics PRESENT} |
+       WITH COMPONENTS {..., roadSurfaceDynamicCharacteristics PRESENT})
+
+TextContainer::= SEQUENCE (SIZE (1..16,...)) OF TcPart
+
+TcPart::= SEQUENCE {
+	detectionZoneIds		ZoneIds OPTIONAL, 
+	relevanceZoneIds		ZoneIds, 
+	direction				Direction OPTIONAL, 
+	driverAwarenessZoneIds	ZoneIds OPTIONAL, 
+	minimumAwarenessTime	INTEGER (0..255) OPTIONAL,
+	applicableLanes			LanePositions OPTIONAL,
+	layoutId				INTEGER(1..4,...) OPTIONAL,
+	preStoredlayoutId		INTEGER(1..64,...) OPTIONAL,
+	text					TextLines OPTIONAL,
+	data					OCTET STRING,
+	...,
+[[ --extension in V2
+	iviType					IviType, 
+	laneStatus				LaneStatus OPTIONAL,	
+	vehicleCharacteristics	VehicleCharacteristicsList OPTIONAL ]]
+	}
+
+LayoutContainer::=SEQUENCE{
+	layoutId			INTEGER(1..4,...),
+	height				INTEGER(10..73) OPTIONAL, 
+	width				INTEGER(10..265) OPTIONAL,
+	layoutComponents	LayoutComponents,
+	...  
+	}
+
+AutomatedVehicleContainer::= SEQUENCE (SIZE (1..16,...)) OF AvcPart -- new container in V2
+
+AvcPart::= SEQUENCE { -- new container part in V2
+	detectionZoneIds		ZoneIds OPTIONAL, 
+	relevanceZoneIds		ZoneIds, 
+	direction				Direction OPTIONAL,
+	applicableLanes			LanePositions OPTIONAL,
+	vehicleCharacteristics	VehicleCharacteristicsList OPTIONAL,
+	automatedVehicleRules	AutomatedVehicleRules OPTIONAL,
+	platooningRules			PlatooningRules OPTIONAL,	
+	...
+	} (WITH COMPONENTS {..., automatedVehicleRules PRESENT} |
+       WITH COMPONENTS {..., platooningRules PRESENT})
+
+
+MapLocationContainer::=SEQUENCE{ -- new container in V2
+	reference		MapReference,
+	parts			MlcParts 
+	}
+
+MlcParts::= SEQUENCE (SIZE (1..16,...)) OF MlcPart -- new container part in V2
+
+MlcPart::= SEQUENCE{ -- new container part in V2
+	zoneId		Zid,
+	laneIds		LaneIds OPTIONAL
+	} 
+	
+-- Definition of data frames which are lists of data frames
+-- note: those definitions are to avoid "implicit type definitions" but are bit compatible with V1
+
+AbsolutePositions ::= SEQUENCE (SIZE (1..8,...)) OF AbsolutePosition
+
+AbsolutePositionsWAltitude ::= SEQUENCE (SIZE (1..8,...)) OF AbsolutePositionWAltitude
+
+AutomatedVehicleRules::= SEQUENCE (SIZE (1..5)) OF AutomatedVehicleRule  -- new DF in V2
+
+ConnectedDenms::= SEQUENCE (SIZE(1..8, ...)) OF ActionID -- new DF in V2
+
+DeltaPositions ::= SEQUENCE (SIZE (1..32,...,100)) OF DeltaPosition --size extension in V2
+
+DeltaReferencePositions ::= SEQUENCE (SIZE (1..32,..., 100)) OF DeltaReferencePosition --size extension in V2
+
+ConstraintTextLines1 ::= SEQUENCE (SIZE (1..4),...) OF Text (WITH COMPONENTS {layoutComponentId, language, textContent (SIZE(1..32))})
+
+ConstraintTextLines2::= SEQUENCE (SIZE (1..4),...) OF Text (WITH COMPONENTS {..., textContent (SIZE(1..32))})
+
+IviIdentificationNumbers ::= SEQUENCE (SIZE(1..8)) OF IviIdentificationNumber
+
+ISO14823Attributes::= SEQUENCE (SIZE(1..8),...) OF ISO14823Attribute
+
+LaneConfiguration ::= SEQUENCE (SIZE (1..16,...)) OF LaneInformation
+
+LaneIds::= SEQUENCE (SIZE (1..16,...)) OF LaneID
+
+LanePositions ::= SEQUENCE (SIZE (1..8,...)) OF LanePosition
+
+LayoutComponents ::= SEQUENCE SIZE (1..4,...) OF LayoutComponent
+
+PlatooningRules::= SEQUENCE (SIZE (1..5)) OF PlatooningRule -- new DF in V2
+
+RoadSignCodes ::= SEQUENCE (SIZE (1..4),...) OF RSCode
+
+TextLines::= SEQUENCE (SIZE (1..4),...) OF Text
+
+TrailerCharacteristicsList ::= SEQUENCE (SIZE (1..3)) OF TrailerCharacteristics
+
+TrailerCharacteristicsFixValuesList ::= SEQUENCE (SIZE (1..4,...)) OF  VehicleCharacteristicsFixValues (WITH COMPONENTS {..., euroAndCo2value ABSENT, engineCharacteristics ABSENT})
+
+TrailerCharacteristicsRangesList ::= SEQUENCE (SIZE (1..4,...)) OF  VehicleCharacteristicsRanges (WITH COMPONENTS {comparisonOperator, limits (WITH COMPONENTS {..., exhaustEmissionValues ABSENT, dieselEmissionValues ABSENT, soundLevel ABSENT})})  
+
+SaeAutomationLevels::= SEQUENCE (SIZE (1..5)) OF SaeAutomationLevel -- new DF in V2
+
+VehicleCharacteristicsFixValuesList ::= SEQUENCE (SIZE (1..4,...)) OF  VehicleCharacteristicsFixValues
+
+VehicleCharacteristicsList ::= SEQUENCE (SIZE (1..8, ...)) OF CompleteVehicleCharacteristics
+
+VehicleCharacteristicsRangesList ::= SEQUENCE (SIZE (1..4,...)) OF  VehicleCharacteristicsRanges
+
+ValidityPeriods ::= SEQUENCE (SIZE (1..8),...) OF InternationalSign-applicablePeriod
+
+ZoneIds ::= SEQUENCE (SIZE (1..8,...)) OF Zid
+
+--  Definition of Data Frames
+
+AbsolutePosition::= SEQUENCE{
+	latitude Latitude,
+	longitude Longitude
+	}
+
+AbsolutePositionWAltitude::= SEQUENCE{
+	latitude Latitude,
+	longitude Longitude,
+	altitude Altitude 
+	}
+
+AnyCatalogue::=SEQUENCE{
+	owner			Provider,
+	version			INTEGER(0..255),
+	pictogramCode	INTEGER(0..65535),
+	value			INTEGER (0..65535) OPTIONAL, 
+	unit			RSCUnit OPTIONAL,
+	attributes		ISO14823Attributes OPTIONAL
+	}	
+
+AutomatedVehicleRule::= SEQUENCE { -- new DF in V2
+	priority								PriorityLevel,
+	allowedSaeAutomationLevels				SaeAutomationLevels,
+	minGapBetweenVehicles					GapBetweenVehicles OPTIONAL,
+	recGapBetweenVehicles					GapBetweenVehicles OPTIONAL,
+	automatedVehicleMaxSpeedLimit			SpeedValue OPTIONAL,
+	automatedVehicleMinSpeedLimit			SpeedValue OPTIONAL,
+	automatedVehicleSpeedRecommendation		SpeedValue OPTIONAL,
+	roadSignCodes							RoadSignCodes OPTIONAL,
+	extraText								ConstraintTextLines2 OPTIONAL,
+	...
+	}
+
+CompleteVehicleCharacteristics::= SEQUENCE{
+	tractor		TractorCharacteristics OPTIONAL,
+	trailer		TrailerCharacteristicsList OPTIONAL,
+	train		TrainCharacteristics OPTIONAL
+	}
+
+ComputedSegment::= SEQUENCE {
+	zoneId				Zid, 
+	laneNumber			LanePosition,  
+	laneWidth			IviLaneWidth,
+	offsetDistance 		INTEGER (-32768..32767) OPTIONAL, 
+	offsetPosition 		DeltaReferencePosition 	OPTIONAL 
+	}
+
+DeltaPosition::=SEQUENCE{
+	deltaLatitude 		DeltaLatitude,
+	deltaLongitude		DeltaLongitude
+	}
+
+ISO14823Attribute::= CHOICE{
+   dtm InternationalSign-applicablePeriod, -- Date/Time/Period
+   edt InternationalSign-exemptedApplicablePeriod,-- Exemption status of Date/Time/Period
+   dfl InternationalSign-directionalFlowOfLane,-- Directional Flow of Lane
+   ved InternationalSign-applicableVehicleDimensions,-- Vehicle Dimensions
+   spe InternationalSign-speedLimits,-- Speed
+   roi InternationalSign-rateOfIncline,-- Rate of Incline
+   dbv InternationalSign-distanceBetweenVehicles,-- Distance Between Vehicles
+   ddd InternationalSign-destinationInformation-- Destination/Direction/Distance
+   }
+
+ISO14823Code ::= SEQUENCE{
+	pictogramCode           SEQUENCE {  
+		countryCode             OCTET STRING (SIZE (2)) OPTIONAL, 
+        serviceCategoryCode     CHOICE { 
+			trafficSignPictogram              ENUMERATED {dangerWarning, regulatory, informative,...},
+			publicFacilitiesPictogram         ENUMERATED {publicFacilities, ...},  
+            ambientOrRoadConditionPictogram   ENUMERATED {ambientCondition, roadCondition,...},
+		 ...},
+         pictogramCategoryCode   SEQUENCE {
+                  nature            INTEGER (1..9),
+                  serialNumber      INTEGER (0..99)
+            }},
+      attributes        ISO14823Attributes OPTIONAL 
+      }
+
+LaneInformation::= SEQUENCE{
+	laneNumber			LanePosition, 
+	direction			Direction,
+	validity			InternationalSign-applicablePeriod OPTIONAL,
+	laneType			LaneType, 
+	laneTypeQualifier	CompleteVehicleCharacteristics OPTIONAL,
+	laneStatus			LaneStatus, 	 
+	laneWidth       	IviLaneWidth OPTIONAL,       
+	...,
+[[ --extension in V2
+	detectionZoneIds					ZoneIds OPTIONAL,
+	relevanceZoneIds					ZoneIds OPTIONAL,
+	laneCharacteristics					LaneCharacteristics	 OPTIONAL, 
+	laneSurfaceStaticCharacteristics	RoadSurfaceStaticCharacteristics OPTIONAL,
+	laneSurfaceDynamicCharacteristics	RoadSurfaceDynamicCharacteristics OPTIONAL ]]
+	}
+
+LaneCharacteristics::= SEQUENCE{
+	zoneDefinitionAccuracy		DefinitionAccuracy,
+	existinglaneMarkingStatus	LaneMarkingStatus, 
+	newlaneMarkingColour		MarkingColour,
+	laneDelimitationLeft		LaneDelimitation,
+	laneDelimitationRight		LaneDelimitation,
+	mergingWith					Zid  
+	}
+
+LayoutComponent::=SEQUENCE{
+	layoutComponentId	INTEGER(1..8,...),
+	height				INTEGER(10..73), 
+	width				INTEGER(10..265), 
+	x					INTEGER(10..265),
+	y					INTEGER(10..73), 
+	textScripting		INTEGER {horizontal (0),  vertical (1)}(0..1)
+	} 
+
+LoadType::= SEQUENCE{
+	goodsType				GoodsType,
+	dangerousGoodsType		DangerousGoodsBasic,
+	specialTransportType	SpecialTransportType
+	}
+
+MapReference::= CHOICE { -- new DF in V2
+	roadsegment			RoadSegmentReferenceID,
+	intersection 		IntersectionReferenceID
+	}
+
+PlatooningRule::= SEQUENCE {	-- new DF in V2
+	priority								PriorityLevel,
+	allowedSaeAutomationLevels				SaeAutomationLevels,
+	maxNoOfVehicles							MaxNoOfVehicles OPTIONAL,
+	maxLenghtOfPlatoon						MaxLenghtOfPlatoon OPTIONAL,
+	minGapBetweenVehicles					GapBetweenVehicles OPTIONAL,
+	platoonMaxSpeedLimit					SpeedValue OPTIONAL,
+	platoonMinSpeedLimit					SpeedValue OPTIONAL,
+	platoonSpeedRecommendation				SpeedValue OPTIONAL,
+	roadSignCodes							RoadSignCodes OPTIONAL,
+	extraText								ConstraintTextLines2 OPTIONAL,
+	...
+	}
+
+PolygonalLine::= CHOICE {
+	deltaPositions					DeltaPositions, 
+	deltaPositionsWithAltitude		DeltaReferencePositions, 	
+	absolutePositions				AbsolutePositions, 
+	absolutePositionsWithAltitude	AbsolutePositionsWAltitude, 
+	...
+	}
+
+RoadSurfaceDynamicCharacteristics::= SEQUENCE{
+	condition				Condition,
+	temperature				Temperature,
+	iceOrWaterDepth			Depth,
+	treatment				TreatmentType
+	}
+
+RoadSurfaceStaticCharacteristics::= SEQUENCE{
+	frictionCoefficient		FrictionCoefficient,
+	material				MaterialType,
+	wear					WearLevel,
+	avBankingAngle			BankingAngle
+	}
+	
+RSCode::= SEQUENCE{
+	layoutComponentId	INTEGER(1..4,...) OPTIONAL,
+	code				CHOICE {
+		viennaConvention	VcCode, -- see Vienna Convention Annex A
+		iso14823			ISO14823Code, 
+		itisCodes			INTEGER (0..65535), -- see SAE J2540
+		anyCatalogue		AnyCatalogue,
+		...
+		}}
+
+Segment::= SEQUENCE {
+	line			PolygonalLine,
+	laneWidth		IviLaneWidth OPTIONAL
+	}
+
+Text::= SEQUENCE {
+	layoutComponentId	INTEGER(1..4,...) OPTIONAL,
+	language			BIT STRING (SIZE(10)), 	
+	textContent			UTF8String
+	}
+
+TractorCharacteristics::=SEQUENCE{
+	equalTo			VehicleCharacteristicsFixValuesList OPTIONAL,
+    notEqualTo		VehicleCharacteristicsFixValuesList OPTIONAL, 
+	ranges      	VehicleCharacteristicsRangesList OPTIONAL
+	}
+    
+TrailerCharacteristics::=SEQUENCE{
+    equalTo     TrailerCharacteristicsFixValuesList OPTIONAL,
+    notEqualTo  TrailerCharacteristicsFixValuesList OPTIONAL,
+    ranges      TrailerCharacteristicsRangesList  OPTIONAL
+    }
+
+TrainCharacteristics::= TractorCharacteristics
+
+VcCode::= SEQUENCE {
+	roadSignClass 	VcClass,  -- see Vienna Convention 
+	roadSignCode	INTEGER (1..64),
+	vcOption		VcOption, -- e.g. the "a" in H, 3a
+	validity		ValidityPeriods OPTIONAL, 
+	value			INTEGER (0..65535) OPTIONAL, 
+	unit			RSCUnit OPTIONAL			
+	}
+
+VehicleCharacteristicsFixValues::= CHOICE{
+	simpleVehicleType			StationType,	
+	euVehicleCategoryCode	 	EuVehicleCategoryCode,
+	iso3833VehicleType	 		Iso3833VehicleType,
+	euroAndCo2value				EnvironmentalCharacteristics,
+	engineCharacteristics		EngineCharacteristics,
+	loadType					LoadType,
+	usage						VehicleRole,
+	...
+	}
+
+VehicleCharacteristicsRanges::= SEQUENCE{
+	comparisonOperator			ComparisonOperator,
+	limits					CHOICE{
+		numberOfAxles				INTEGER(0..7),
+		vehicleDimensions			VehicleDimensions,
+		vehicleWeightLimits			VehicleWeightLimits,
+		axleWeightLimits			AxleWeightLimits,
+		passengerCapacity 			PassengerCapacity, 
+		exhaustEmissionValues		ExhaustEmissionValues,
+		dieselEmissionValues  		DieselEmissionValues,
+		soundLevel					SoundLevel, 
+		...
+		}
+	}
+
+Zone::= CHOICE {
+	segment				Segment,
+	area				PolygonalLine,
+	computedSegment		ComputedSegment,
+	...
+	}
+
+-- Defition of IVI specific data elements 
+
+BankingAngle::=INTEGER (-20..21)
+
+ComparisonOperator ::= INTEGER {
+	greaterThan				(0),
+	greaterThanOrEqualTo	(1),
+	lessThan				(2),
+	lessThanOrEqualTo		(3)
+	} (0..3)
+
+Condition::=INTEGER{
+	dry	 				(0),
+	moist				(1),
+	wet				 	(2),
+	standingWater		(3),	
+	frost				(4),
+	ice					(5),
+	snow 				(6),
+	slush				(7),
+	unvailable			(8)
+-- values 9 to 15 reserved for future use  
+} (0..15, ...)
+
+DefinitionAccuracy::= INTEGER{
+	oneCm 				(0),
+	twoCm				(1),
+	fiveCm				(2),
+	tenCm 				(3),
+	twentyCm			(4),
+	fiftyCm				(5),
+	oneMeter			(6),
+	unavailable			(7)
+} (0..7, ...)
+
+Depth::= INTEGER (0..255)
+
+Direction::= INTEGER{
+	sameDirection			(0),
+	oppositeDirection		(1),
+	bothDirections			(2),
+	valueNotUsed			(3)
+	} (0..3)
+
+DriverCharacteristics::= INTEGER{
+	unexperiencedDrivers		(0),
+	experiencedDrivers			(1),
+	rfu1						(2),	
+	rfu2						(3)
+	} (0..3)
+
+FrictionCoefficient::= INTEGER (0..101) 
+
+GapBetweenVehicles::= INTEGER (0..255) -- new DE in V2
+
+GoodsType::= INTEGER {
+	ammunition					(0),
+	chemicals					(1),
+	empty 						(2),
+	fuel						(3),
+	glass						(4),
+	dangerous					(5),
+	liquid						(6),
+	liveStock					(7),
+	dangerousForPeople			(8),
+	dangerousForTheEnvironment	(9),
+	dangerousForWater			(10),
+	perishableProducts			(11),
+	pharmaceutical				(12),
+	vehicles					(13)
+	-- other values  reserved for future use
+	} (0..15,...)
+
+IviIdentificationNumber::= INTEGER(1..32767,...)
+
+IviLaneWidth::= INTEGER (0..1023) -- only renamed from V1, no change
+
+IviPurpose::= INTEGER { 
+	safety 					(0), 
+	environmental 			(1), 
+	trafficOptimisation 	(2)
+	} (0..3) 
+
+IviStatus::= INTEGER {
+	new 			(0),	
+	update			(1),	
+	cancellation	(2),	
+	negation 		(3)	
+	-- other values  reserved for future use
+	}(0..7)
+
+IviType::= INTEGER {
+	immediateDangerWarningMessages 			(0),
+	regulatoryMessages 						(1),
+	trafficRelatedInformationMessages 		(2), 
+	pollutionMessages 						(3),
+	notTrafficRelatedInformationMessages 	(4)
+	-- other values  reserved for future use
+	} (0..7)
+
+LaneDelimitation::=INTEGER {
+	noDelimitation 		(0),
+	lowLaneSeparator 	(1),
+	highLaneSeparator	(2),
+	wall 				(3),
+	curb				(4),
+	unpaved				(5),
+	guardrail			(6)
+	-- value 7 reserved for future use 
+} (0..7, ...)
+
+LaneMarkingStatus::= BOOLEAN
+
+LaneStatus::= INTEGER {
+	open 				(0),
+	closed 				(1),
+	mergeR 				(2),
+	mergeL 				(3),
+	mergeLR 			(4),
+	provisionallyOpen 	(5),
+	diverging 			(6)	
+	-- value 7 reserved for future use 
+} (0..7, ...)
+
+LaneType::= INTEGER{
+	traffic 			(0),
+	through				(1),
+	reversible			(2),
+	acceleration		(3),
+	deceleration		(4),
+	leftHandTurning		(5),
+	rightHandTurning	(6),
+	dedicatedVehicle	(7),
+	bus					(8),
+	taxi				(9),
+	hov					(10),
+	hot					(11),
+	pedestrian			(12),
+	bikeLane			(13),
+	median              (14),   
+	striping			(15),
+	trackedVehicle		(16),
+	parking				(17),
+	emergency			(18),
+	verge 				(19),
+	minimumRiskManoeuvre(20)
+-- values 21 to 31 reserved for future use 
+	}(0..31)
+
+MarkingColour::=INTEGER {
+	white 				(0),
+	yellow			 	(1),
+	orange				(2),
+	red 				(3),
+	blue				(4),
+	unavailable			(7)
+	-- value 5,6 reserved for future use 
+} (0..7, ...)
+
+MaterialType::=INTEGER {
+	asphalt 			(0),
+	concrete		 	(1),
+	cobblestone			(2),
+	gravel 				(3),
+	unavailable			(7)
+-- value 4, 5,6 reserved for future use 
+} (0..7, ...)
+
+MaxLenghtOfPlatoon::= INTEGER (1..64) -- new DE in V2
+
+MaxNoOfVehicles::= INTEGER (2..64) -- new DE in V2
+
+PriorityLevel::=INTEGER (0..2) -- new DE in V2
+
+RSCUnit::= INTEGER {
+	kmperh				(0),
+	milesperh			(1),
+	kilometer			(2),
+	meter				(3),
+	decimeter			(4),
+	centimeter			(5),
+	mile				(6),
+	yard				(7),
+	foot				(8),
+	minutesOfTime		(9),
+	tonnes				(10), --1000 kg, not Ton!
+	hundredkg			(11),
+	pound				(12), --lbs
+	rateOfIncline		(13)
+	-- other value reserved for future use
+	} (0..15)
+
+SaeAutomationLevel::= INTEGER (0..5) -- new DE in V2
+
+Temperature::=INTEGER (-100..151)
+
+TreatmentType ::= INTEGER {
+	no				(0),
+	antiskid		(1),
+	anti-icing		(2),
+	de-icing		(3),
+	unavailable 	(7)
+-- value 4 to 6 reserved for future use
+	} (0..7)
+
+VcClass::= INTEGER {
+	classA 	(0),
+	classB	(1),
+	classC	(2),
+	classD	(3),
+	classE	(4),
+	classF	(5),
+	classG	(6),
+	classH	(7)
+	} (0..7)
+
+VcOption::= INTEGER {
+	none 	(0),
+	a 		(1),
+	b		(2),
+	c		(3),
+	d		(4),
+	e		(5),
+	f		(6),
+	g		(7)
+	} (0..7)
+
+WearLevel::=INTEGER {
+	new		 			(0),
+	good			 	(1),
+	bad					(2),
+	hasPotholes 		(3),
+	unavailable			(7)
+-- value 4, 5,6 reserved for future use 
+} (0..7, ...)
+
+Zid::= INTEGER (1..32,...)
+
+END
